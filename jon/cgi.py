@@ -28,7 +28,7 @@ _html_encre = re.compile("[&<>\"'+]")
 # '+' is encoded because it is special in UTF-7, which the browser may select
 # automatically if the content-type header does not specify the character
 # encoding. This is paranoia and is not bulletproof, but it does no harm. See
-# section 4 of www.microsoft.com/technet/security/news/csoverv.asp
+# section 4 of www.microsoft.com/technet/security/news/csoverv.mspx
 _html_encodes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
                   "'": "&#39;", "+": "&#43;" }
 
@@ -239,7 +239,7 @@ function calls leading up to the error, with the most recent first.</p>
   linecache.clearcache()
 
 
-class Request:
+class Request(object):
   """All the information about a CGI-style request, including how to respond."""
   """Headers are buffered in a list before being sent. They are either sent
   on request, or when the first part of the body is sent. If requested, the
@@ -274,6 +274,11 @@ class Request:
     raise AttributeError, "%s instance has no attribute %s" % \
       (self.__class__.__name__, `name`)
 
+  def close(self):
+    """Closes the output stream."""
+    self.flush()
+    self._close()
+
   def output_headers(self):
     """Output the list of headers."""
     if self._doneHeaders:
@@ -304,14 +309,26 @@ class Request:
     self.del_header(hdr)
     self._headers.append((hdr, val))
 
+  def get_header(self, hdr, index=0):
+    """Retrieve a header from the list of headers."""
+    i = 0
+    hdr = hdr.lower()
+    for pair in self._headers:
+      if pair[0].lower() == hdr:
+        if i == index:
+          return pair[1]
+        i += 1
+    return None
+
   def del_header(self, hdr):
     """Removes all values for a header from the list of headers."""
     if self._doneHeaders:
       raise SequencingError, \
         "cannot del_header(%s) after output_headers()" % `hdr`
+    hdr = hdr.lower()
     while 1:
       for s in self._headers:
-        if s[0] == hdr:
+        if s[0].lower() == hdr:
           self._headers.remove(s)
           break
       else:
@@ -354,8 +371,13 @@ class Request:
 
   def _flush(self):
     """Flushes data to the client."""
-    """Must be overridden by the sub-class."""
-    raise NotImplementedError, "_flush must be overridden"
+    """May be overridden by the sub-class."""
+    pass
+
+  def _close(self):
+    """Closes the output stream."""
+    """May be overridden by the sub-class."""
+    pass
 
   def write(self, s):
     """Sends some data to the client."""
@@ -452,18 +474,94 @@ class Request:
 </body></html>""")
 
 
+class GZipMixIn(object):
+  def _init(self):
+    self._gzip = None
+    self._gzip_level = 6
+    super(GZipMixIn, self)._init()
+
+  def _close(self):
+    if self._gzip:
+      import struct
+      super(GZipMixIn, self)._write(self._gzip.flush(self._gzip_zlib.Z_FINISH))
+      super(GZipMixIn, self)._write(
+        struct.pack("<II", self._gzip_crc, self._gzip_length))
+      super(GZipMixIn, self)._flush()
+      self._gzip = None
+    super(GZipMixIn, self)._close()
+
+  def gzip_level(self, level=6):
+    """Enable/disable gzip output compression."""
+    if self._gzip_level == level:
+      return
+    if self._doneHeaders:
+      raise SequencingError, "Cannot adjust compression - headers already sent"
+    self._gzip_level = level
+
+  def _write(self, s):
+    if not self._gzip:
+      super(GZipMixIn, self)._write(s)
+      return
+    self._gzip_crc = self._gzip_zlib.crc32(s, self._gzip_crc)
+    self._gzip_length += len(s)
+    super(GZipMixIn, self)._write(self._gzip.compress(s))
+
+  def output_headers(self):
+    if self._gzip_level == 0:
+      super(GZipMixIn, self).output_headers()
+      return
+    gzip_ok = 0
+    if self.environ.has_key("HTTP_ACCEPT_ENCODING"):
+      encodings = [[a.strip() for a in x.split(";", 1)]
+        for x in self.environ["HTTP_ACCEPT_ENCODING"].split(",")]
+      for encoding in encodings:
+        if encoding[0].lower() == "gzip":
+          if len(encoding) == 1:
+            gzip_ok = 1
+            break
+          else:
+            q = [x.strip() for x in encoding[1].split("=")]
+            if len(q) == 2 and q[0].lower() == "q" and q[1] != "0":
+              gzip_ok = 1
+              break
+    if gzip_ok:
+      try:
+        import zlib
+        encoding = "gzip"
+        encoding = self.get_header("Content-Encoding")
+        if encoding is None:
+          encoding = "gzip"
+        else:
+          encoding += ", gzip"
+        self.set_header("Content-Encoding", encoding)
+        self.del_header("Content-Length")
+        super(GZipMixIn, self).output_headers()
+        self._gzip = zlib.compressobj(self._gzip_level, 8, -15)
+        self._gzip_zlib = zlib
+        self._gzip_crc = self._gzip_length = 0
+        super(GZipMixIn, self)._write(
+          "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03")
+        return
+      except ImportError:
+        pass
+    super(GZipMixIn, self).output_headers()
+
+  def _flush(self):
+    if self._gzip:
+      super(GZipMixIn, self)._write(
+        self._gzip.flush(self._gzip_zlib.Z_SYNC_FLUSH))
+    super(GZipMixIn, self)._flush()
+
+
 class CGIRequest(Request):
   """An implementation of Request which uses the standard CGI interface."""
-
-  def __init__(self, handler_type):
-    Request.__init__(self, handler_type)
 
   def _init(self):
     self.__out = sys.stdout
     self.__err = sys.stderr
     self.environ = os.environ
     self.stdin = sys.stdin
-    Request._init(self)
+    super(CGIRequest, self)._init()
 
   def process(self):
     """Read the CGI input and create and run a handler to handle the request."""
@@ -477,7 +575,7 @@ class CGIRequest(Request):
         handler.process(self)
       except:
         handler.traceback(self)
-    self.flush()
+    self.close()
 
   def error(self, s):
     self.__err.write(s)
@@ -503,7 +601,11 @@ class CGIRequest(Request):
         self.aborted = 1
 
 
-class Handler:
+class GZipCGIRequest(GZipMixIn, CGIRequest):
+  pass
+
+
+class Handler(object):
   """Handle a request."""
   def process(self, req):
     """Handle a request. req is a Request object."""
@@ -514,7 +616,7 @@ class Handler:
     req.traceback()
 
 
-class DebugHandlerMixIn:
+class DebugHandlerMixIn(object):
   def traceback(self, req):
     """Display a traceback, req is a Request object."""
     traceback(req, html=1)
