@@ -41,7 +41,7 @@ instances of <code><a href="cgi.html#handler">cgi.Handler</a></code> subclasses
 to handle the requests.</p>
 
 <h3>Public Methods</h3>
-<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None, request_type=Request, threading_level=2)</strong></code></a></h4>
+<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None, request_type=Request, threading_level=1)</strong></code></a></h4>
 <p><code><strong>handler_types</strong></code>: map from FastCGI request types
 to subclasses of <code><a href="cgi.html#handler">cgi.Handler</a></code><br />
 <code><strong>max_requests</strong></code>: integer<br />
@@ -75,11 +75,11 @@ used unless explicitly specified:</p>
 <p>You can alter the class used to provide request information using
 <code>request_type</code>. The class provided must always be a subclass of
 <code>fcgi.<a href="#request">Request</a></code>.</p>
-<p>By default, <code>fcgi</code> uses threading extensively. It creates one
-thread per connection, and one thread per request. However, on some platforms
-threading is either not available, or the operating system support for it is
-buggy. You can alter the use of threading with the <code>threading_level</code>
-parameter. The valid <code>threading_level</code> values are:</p>
+<p>By default, <code>fcgi</code> uses threading to handle requests. It creates
+one thread per connection. However, on some platforms threading is either not
+available, or the operating system support for it is buggy. You can alter the
+use of threading with the <code>threading_level</code> parameter. The valid
+<code>threading_level</code> values are:</p>
 <table>
 <tr><th><code>threading_level</code></th><th>Meaning</th></tr>
 <tr><th><code>0</code></th><td>Threading is not used at all.<br />
@@ -93,6 +93,11 @@ cannot be multiplexed onto a connection.</td></tr>
 Multiple connections can be handled simultaneously, and multiple requests
 can be multiplexed onto a connection.</td></tr>
 </table>
+<p>The default <code>threading_level</code> is <code>1</code>. If your web
+server supports multiplexing of connections then you may wish to use level
+<code>2</code>, however Apache mod_fastcgi does not support multiplexing and
+the <code>fcgi</code> module makes less efficient use of threads if
+multiplexing is not used so it is not the default.</p>
 <p>If threading is requested (i.e. a <code>threading_level</code> greater than
 zero is specified, or <code>threading_level</code> is left unspecified), but
 the Python <code>thread</code> module cannot be imported (i.e. threading support
