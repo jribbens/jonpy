@@ -56,11 +56,11 @@ class Request(cgi.Request):
     if self._doneHeaders:
       raise cgi.SequencingError, \
         "cannot add_header(%s) after output_headers()" % `hdr`
-    if hdr.lower() == "Content-Type":
+    if hdr.lower() == "content-type":
       self._modpy_req.content_type = val
     else:
       self._modpy_req.headers_out.add(hdr, val)
-    if hdr.lower() == "Location":
+    if hdr.lower() == "location":
       self._redirected = 1
 
   def set_header(self, hdr, val):
@@ -90,10 +90,10 @@ class Request(cgi.Request):
     if self._doneHeaders:
       raise cgi.SequencingError, \
         "cannot del_header(%s) after output_headers()" % `hdr`
-    if hdr.lower() == "Content-Type":
+    if hdr.lower() == "content-Type":
       raise Error, "cannot del_header(\"Content-Type\")"
     del self._modpy_req.headers_out[hdr]
-    if hdr.lower() == "Location":
+    if hdr.lower() == "location":
       self._redirected = 0
 
   def process(self, modpy_req):
