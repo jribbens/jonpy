@@ -254,9 +254,9 @@ class Request:
     except AttributeError:
       pass
     self.cookies = Cookie.SimpleCookie()
-    """The HTTP cookies passed from the client."""
+    if self.environ.has_key("HTTP_COOKIE"):
+      self.cookies.load(self.environ["HTTP_COOKIE"])
     self.aborted = 0
-    """True if this request has been aborted (i.e. the client has gone.)"""
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
 
   def __getattr__(self, name):
@@ -429,8 +429,6 @@ class Request:
         self._mergemime(environ["CONTENT_TYPE"], inf)
       else:
         self._mergevars(inf.read(int(environ.get("CONTENT_LENGTH", "-1"))))
-    if environ.has_key("HTTP_COOKIE"):
-      self.cookies.load(environ["HTTP_COOKIE"])
 
   def traceback(self):
     traceback(self)
