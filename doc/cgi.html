@@ -64,13 +64,13 @@ special suffixes.</p>
 a name without a corresponding equals sign and value. If the string contains
 a name and an equals sign but no value then this is represented as an empty
 string.) If the key ends with the string <code>"*"</code> then the value is a
-list containing one or more values, each of which is either a string or
+sequence containing one or more values, each of which is either a string or
 <code>None</code> (to support multiple values with the same name, e.g. HTML
 <code>&lt;select&gt;</code> input fields). If the key ends with the string
 <code>"!"</code> then the value is a
 <code><a href="mime.html#entity">mime.Entity</a></code>
 object (to support file uploads). If the key ends with the string
-<code>"!*"</code> then the value is a list of one or more
+<code>"!*"</code> then the value is a sequence of one or more
 <code><a href="mime.html#entity">mime.Entity</a></code> objects.</p>
 <p>If a form variable is found with a name ending in <code>"!"</code> or
 <code>"!*"</code> but it did not arrive in the form of a MIME section then it
