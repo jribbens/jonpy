@@ -34,7 +34,7 @@ standard CGI protocol.</p>
 class Handler(cgi.Handler):<br />
 &nbsp;&nbsp;def process(self, req):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain")<br />
-&nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, %s!\n" % req.params.get("greet", "world"))<br />
 cgi.CGIRequest(Handler).process()
 </code></p>
 <p>Note: by default, output from the handler is buffered. If the output from
