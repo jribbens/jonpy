@@ -29,6 +29,12 @@ required and hidden form fields are used to store input values instead - see
 <p>This variable must be overridden by subclasses. It specifies how many stages
 make up the current multiform.</p>
 
+<h4><a name="multiform:keys" id="multiform:keys"><code><strong>keys</strong></code></a></h4>
+<p>This variable may be overridden by subclasses. It specifies container keys
+that are not associated with any individual stage - for example, container keys
+that are initialised by form variables passed in to the start of the
+multiform.</p>
+
 <h4><a name="multiform:filename" id="multiform:filename"><code><strong>filename</strong></code></a></h4>
 <p>This variable must be overridden by subclasses. It specifies the filename
 relative to the template file directory of the stage templates. The filename
@@ -60,6 +66,20 @@ multiform is started. It should set up initial values in
 <code>self.<a href="#session:container">container</a></code> for all inputs,
 even those whose default value should be the empty string. The default
 implementation does nothing.</p>
+
+<h4><a name="multiform:update" id="multiform:update"><code><strong>update(self)</strong></code></a></h4>
+<p>This method may be overridden by subclasses. It is called on every stage just
+before the individual stages' <code><a href="#stage:check">update</a></code>
+methods are called. It can perform any global updating that may be
+necessary.</p>
+
+<h4><a name="multiform:check" id="multiform:check"><code><strong>check(self)</strong></code></a></h4>
+<p>This method may be overridden by subclasses. It is called on every stage just
+before the individual stages' <code><a href="#stage:check">check</a></code>
+methods are called. It can perform any global checking that may be necessary,
+and update <code>self.<a href="#multiform:errors">errors</a></code> as it sees
+fit. Note that it is up to this method to alter
+<code>self.<a href="#multiform:stage">stage</a></code> manually if required.</p>
 
 <h4><a name="multiform:delete" id="multiform:delete"><code><strong>delete(self)</strong></code></a></h4>
 <p>If this multiform's input container is being stored in a session, deletes the
