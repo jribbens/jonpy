@@ -37,6 +37,10 @@ class Handler(cgi.Handler):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")<br />
 cgi.CGIRequest(Handler).process()
 </code></p>
+<p>Note: by default, output from the handler is buffered. If the output from
+the script is going to be large (for example, if the output is not an HTML
+file), then buffering should be disabled using
+<code><a href="#request:set_buffering">set_buffering</a></code>.</p>
 
 <h2><a name="error" id="error">class: Error(Exception)</a></h2>
 <p>The base class for all exceptions defined by the <code>cgi</code> module.</p>
@@ -169,7 +173,8 @@ raised.</p>
 <p>Specify whether or not client output sent using
 <code><a href="#request:write">write</a></code> will be buffered. If buffering
 is disabled when output has already been buffered then the existing buffer
-will be flushed immediately.</p>
+will be flushed immediately. At the start of a new request, buffering defaults
+to 'on'.</p>
 
 <h4><a name="request:flush" id="request:flush"><code><strong>flush(self)</strong></code></a></h4>
 <p>Flushes any buffered output to the client. If the HTTP headers array has not

@@ -93,7 +93,7 @@ class Request:
   def _init(self):
     self._doneHeaders = 0
     self._headers = []
-    self._bufferOutput = 0
+    self._bufferOutput = 1
     self._output = StringIO.StringIO()
     try:
       del self.params
