@@ -154,7 +154,6 @@ class Handler(cgi.Handler):
 
   def process(self, req):
     self.req = req
-    self.req.set_buffering(1)
     self.template = self._get_template()
     self.etc = self._get_etc()
     codefname = self._get_code()
