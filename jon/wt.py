@@ -56,7 +56,7 @@ class TemplateCode:
       self.wt = self.outer.wt
     self.req = self.wt.req
 
-  def process(self, template, selected = None):
+  def process(self, template, selected=None):
     process(self.wt, template, self, selected)
 
   def main(self, template):
@@ -94,7 +94,7 @@ class GlobalTemplate(TemplateCode):
 
 _process_sb = re.compile("<!--wt:([A-Za-z0-9_]+)(/)?-->")
 
-def process(wt, template, namespace, selected = None):
+def process(wt, template, namespace, selected=None):
   pos = 0
   while 1:
     start = _process_sb.search(template, pos)
