@@ -140,6 +140,18 @@ function calls leading up to the error, with the most recent first.</p>
   # this code adapted from the standard cgitb module
   # unfortunately we cannot use that module directly,
   # mainly because it won't allow us to output to the log
+  if html:
+    req.write("<p><strong>%s</strong>: %s" % (_tb_encode(etype),
+      _tb_encode(evalue)))
+  req.error("%s: %s\n" % (etype, evalue))
+  #if type(evalue) is types.InstanceType:
+  #  for name in dir(evalue):
+  #    if html:
+  #      req.write("\n<br /><tt>&nbsp;&nbsp;&nbsp;&nbsp;</tt>%s&nbsp;= %s" %
+  #        (_tb_encode(name), _tb_encode(repr(getattr(evalue, name)))))
+  #    req.error("  %s = %s\n" % (name, repr(getattr(evalue, name))))
+  if html:
+    req.write("</p>\n")
   frames = []
   records = inspect.getinnerframes(etb, 7)
   records.reverse()
@@ -215,18 +227,6 @@ function calls leading up to the error, with the most recent first.</p>
     req.error(", ".join(dump) + "\n")
     if html:
       req.write("</table>\n")
-  if html:
-    req.write("<p><strong>%s</strong>: %s" % (_tb_encode(etype),
-      _tb_encode(evalue)))
-  req.error("%s: %s\n" % (etype, evalue))
-  if type(evalue) is types.InstanceType:
-    for name in dir(evalue):
-      if html:
-        req.write("\n<br /><tt>&nbsp;&nbsp;&nbsp;&nbsp;</tt>%s&nbsp;= %s" %
-          (_tb_encode(name), _tb_encode(repr(getattr(evalue, name)))))
-      req.error("  %s = %s\n" % (name, repr(getattr(evalue, name))))
-  if html:
-    req.write("</p>\n")
   if html:
     req.write("</body></html>\n")
   linecache.clearcache()
