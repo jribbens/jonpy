@@ -51,12 +51,24 @@ class Session(dict):
     pass
   tidy = staticmethod(tidy)
 
-  def __init__(self, req, secret, cookie="jonsid", url=0, root=""):
+  def __init__(self, req, secret, cookie="jonsid", url=0, root="",
+    referer=None, sid=None, shash=None):
     dict.__init__(self)
     self["id"] = None
     self._req = req
     self.relocated = 0
     self.new = 0
+    
+    # try and determine existing session id
+    
+    if sid is not None:
+      self["id"] = sid
+      if shash is None:
+        self["hash"] = self._make_hash(self["id"], secret)
+      else:
+        self["hash"] = shash
+        if self["hash"] != self._make_hash(self["id"], secret):
+          self["id"] = None
 
     if cookie and self._req.cookies.has_key(cookie):
       self["id"] = self._req.cookies[cookie].value[:8]
@@ -75,9 +87,20 @@ class Session(dict):
         if self["hash"] != self._make_hash(self["id"], secret):
           self["id"] = None
 
+    # check the session
+
+    if referer:
+      if self._req.environ.has_key("HTTP_REFERER"):
+        if self._req.environ["HTTP_REFERER"].find(referer) == -1:
+          self["id"] = None
+
+    # try and load the session
+
     if self["id"] is not None:
       if not self._load():
         self["id"] = None
+
+    # if no session was available and loaded, create a new one
 
     if self["id"] is None:
       if self.has_key("hash"):
@@ -91,6 +114,8 @@ class Session(dict):
         c = Cookie.SimpleCookie()
         c[cookie] = self["id"] + self["hash"]
         self._req.add_header("Set-Cookie", c[cookie].OutputString())
+
+    # if using url-based sessions, redirect if necessary
 
     if url:
       if not requrl or self["id"] != requrl[:8] or self["hash"] != requrl[8:]:
