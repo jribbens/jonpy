@@ -43,7 +43,6 @@ def connect(*args, **kwargs):
   try:
     return _available[`args` + "\0" + `kwargs`].get(0)
   except (KeyError, _Queue.Empty):
-    print "making new connection"
     return _Connection(None, None, *args, **kwargs)
 
 
