@@ -40,9 +40,12 @@ def replace(wt, template, namespace):
         if not _replace_validchunk.match(chunk):
           raise ValueError, "'%s' is not a valid identifier" % chunk
         if callable(getattr(namespace, chunk)):
-          wt.req.write(encode(str(getattr(namespace, chunk)())))
+          out = getattr(namespace, chunk)()
         else:
-          wt.req.write(encode(str(getattr(namespace, chunk))))
+          out = getattr(namespace, chunk)
+        if not isinstance(out, unicode):
+          out = str(out)
+        wt.req.write(encode(out))
 
 
 class TemplateCode:
