@@ -2,3 +2,4 @@
 
 include LICENCE
 recursive-include doc *
+recursive-include example *
