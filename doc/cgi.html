@@ -28,7 +28,10 @@ use <code>self</code> to store per-request data.</p>
 to call the handler. Which subclass is used depends on the protocol used to
 communicate with the web server. This module provides
 <code>cgi.<a href="#cgirequest">CGIRequest</a></code> which implements the
-standard CGI protocol.</p>
+standard CGI protocol, and also
+<code>cgi.<a href="#gzipcgirequest">GZipCGIRequest</a></code> which is the
+same but uses <a href="http://www.gzip.org/zlib/">zlib</a> to compress
+the response when the user's browser indicates it can do this.</p>
 <p>Example:</p>
 <p class="code"><code>import jon.cgi as cgi<br />
 class Handler(cgi.Handler):<br />
@@ -150,6 +153,17 @@ raised.</p>
 <p>Example:</p>
 <p class="code"><code>req.add_header("Set-Cookie", "foo=bar; path=/")</code></p>
 
+<h4><a name="request:get_header" id="request:get_header"><code><strong>get_header(self, hdr, index=0)</strong></code></a></h4>
+<p><code><strong>hdr</strong></code>: string<br />
+<code><strong>index</strong></code>: integer</p>
+<p>Retrieves a header from the array of HTTP headers (this is the array
+of <em>output</em> headers the handler will be returning to the user agent,
+not the input headers <em>from</em> the user agent). If there is more than
+one header with the same name, the <code>index</code> parameter is used to
+specify which one is required. If the named header was not found, or there
+were not enough occurrences of it to satisfy the index requirement,
+<code>None</code> is returned. Header names are matched case0insensitively.</p>
+
 <h4><a name="request:set_header" id="request:set_header"><code><strong>set_header(self, hdr, val)</strong></code></a></h4>
 <p><code><strong>hdr</strong></code>: string<br />
 <code><strong>val</strong></code>: string</p>
@@ -157,7 +171,7 @@ raised.</p>
 same name already exist in the array, then they are deleted before the new
 header is added. If the headers have already been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
-raised.</p>
+raised. Header names are matched case0insensitively.</p>
 <p>Example:</p>
 <p class="code"><code>req.set_header("Content-Type", "image/jpeg")</code></p>
 
@@ -166,7 +180,7 @@ raised.</p>
 <p>Remove all headers with the name <code>hdr</code> from the array of HTTP
 headers. If the headers have already been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
-raised.</p>
+raised. Header names are matched case0insensitively.</p>
 
 <h4><a name="request:set_buffering" id="request:set_buffering"><code><strong>set_buffering(self, f)</strong></code></a></h4>
 <p><code><strong>f</strong></code>: true or false value</p>
@@ -179,8 +193,15 @@ to 'on'.</p>
 <h4><a name="request:flush" id="request:flush"><code><strong>flush(self)</strong></code></a></h4>
 <p>Flushes any buffered output to the client. If the HTTP headers array has not
 already been sent then it will be sent before any other output. Generally
-speaking, you do not need to call <code>flush</code>, even if you enable
-buffering, because it is automatically called when the
+speaking, you do not need to call <code>flush</code>, even if buffering is
+enabled, because it is automatically called when the
+<code><a href="#handler:process">Handler.process</a></code> method exits.</p>
+
+<h4><a name="request:close" id="request:close"><code><strong>close(self)</strong></code></a></h4>
+<p>Calls <code><a href="#request:flush">flush()</a></code> and then closes the
+output stream. It is essential that this method is called when the request is
+complete, however in general you do not need to call it manually because it is
+automatically called when the
 <code><a href="#handler:process">Handler.process</a></code> method exits.</p>
 
 <h4><a name="request:clear_output" id="request:clear_output"><code><strong>clear_output(self)</strong></code></a></h4>
@@ -282,6 +303,28 @@ if the <code>environ</code> variable <code>HTTP_COOKIE</code> is available
 then it is parsed into the
 <code>self.<a href="#request:cookies">cookies</a></code> instance variable.</p>
 
+<h2><a name="gzipmixin" id="gzipmixin">class</a>: GZipMixIn</h2>
+<p><code>GZipMixIn</code> is a class that can be mixed-in to a sub-class of the
+<code><a href="#request">Request</a></code> class to enable gzip compression
+of responses to user agents that indicate they can accept it. Make sure you
+specify the <code>GZipMixIn</code> class <em>before</em> the transport class
+on the class line.</p>
+<p>Example:</p>
+<p class="code"><code>class GZipCGIRequest(cgi.GZipMixIn, cgi.CGIRequest):<br />
+&nbsp;&nbsp;pass</code></p>
+
+<h3>Public Methods</h3>
+<h4><a name="gzipmixin:gzip_level" id="gzipmixin:gzip_level"><code><strong>gzip_level(self, level=6)</strong></code></a></h4>
+<p><code><strong>level</strong></code>: integer</p>
+<p>Specifies the compression level used by gzip for this request. The default
+level if you do not call this method is <code>6</code>. This method can also
+be used to disable compression for a particular request by setting
+<code>level</code> to <code>0</code> - for example if the
+handler is returning an image file to the user then compression should be
+disabled as images are already compressed. If the headers have already been
+output then a <code>cgi.<a href="#sequencingerror">SequencingError</a></code>
+exception is raised.</p>
+
 <h2><a name="cgirequest" id="cgirequest">class</a>: CGIRequest(<a href="#request">Request</a>)</h2>
 <p><code>CGIRequest</code> subclasses the 
 <code><a href="#request">Request</a></code> class to implement the standard
@@ -302,6 +345,13 @@ method is called. If an exception is thrown by this method then the
 display it.</p>
 <p>Example:</p>
 <p class="code"><code>cgi.CGIRequest(Handler).process()</code></p>
+
+<h2><a name="gzipcgirequest" id="gzipcgirequest">class</a>: GZipCGIRequest(<a href="#gzipmixin">GZipMixIn</a>, <a href="#cgirequest">CGIRequest</a>)</h2>
+<p>For convenience, this class provides the standard
+<code><a href="#cgirequest">CGIRequest</a></code> class with the
+<code><a href="#gzipmixin">GZipMixIn</a></code> class already mixed in.</p>
+<p>Example:</p>
+<p class="code"><code>cgi.GZipCGIRequest(Handler).process()</code></p>
 
 <h2><a name="handler" id="handler">class: Handler</a></h2>
 <p>This is an abstract class which should be subclassed by the programmer
