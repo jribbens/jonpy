@@ -137,7 +137,6 @@ class Handler(cgi.Handler):
         break
     else:
       raise "Couldn't determine template filename"
-    self.template = req.environ["REDIRECT_REDIRECT_WT_TEMPLATE_FILENAME"]
     sp = os.path.split(req.environ["DOCUMENT_ROOT"])
     if sp[1] == "":
       sp = os.path.split(sp[0])
