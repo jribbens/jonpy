@@ -24,7 +24,7 @@ attributes of the instance.</p>
 <p class="html"><code>&lt;!--wt:item--&gt;<br />
 &lt;a href="item.html?id=$$%ID$$"&gt;$$title$$&lt;/a&gt;<br />
 &lt;!--wt:/item--&gt;</code></p>
-<p class="code"><code>class item(wt.rowaccess):<br />
+<p class="code"><code>class item(wt.rowaccess.RowAccess):<br />
 &nbsp;&nbsp;def main(self, template):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;website.dbc.execute("SELECT ID,title FROM items")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;for self.row in dbc.fetchall():<br />
