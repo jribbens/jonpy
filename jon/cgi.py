@@ -205,8 +205,7 @@ class Request:
     present) then the value will be a mime.Entity object."""
     import mime
     headers = "Content-Type: %s\n" % contenttype
-    body = encoded.read()
-    for entity in mime.Entity(body, mime=1, headers=headers).entities:
+    for entity in mime.Entity(encoded.read(), mime=1, headers=headers).entities:
       if not entity.content_disposition:
         continue
       if entity.content_disposition[0] != 'form-data':
