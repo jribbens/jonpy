@@ -50,8 +50,11 @@ import jon.wt as wt<br />
 import jon.cgi as cgi<br />
 <br />
 cgi.CGIRequest(wt.Handler).process()</code></p>
+<p>You can also perform global setup actions in this file, for example
+altering <code>sys.path[0]</code> to point to a directory where you place
+site-specific modules.</p>
 
-<h2><a name="templatecode" id="templatecode"></a><a href="wt.html#templatecode">TemplateCode</a> examples</h2>
+<h2><a name="templatecode" id="templatecode"></a><code><a href="wt.html#templatecode">TemplateCode</a></code> examples</h2>
 <h3>Simple replacements</h3>
 <p>This example simply displays the form variable <code>foo</code> as part of
 the output HTML. Note that it does not attempt to check whether or not a form
@@ -155,6 +158,55 @@ which is an even number.&lt;/p&gt;<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template, "odd")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template, "even")</code></p>
+
+<h2><a name="globaltemplate" id="globaltemplate"></a><code><a href="wt.html#globaltemplate">GlobalTemplate</a></code> examples</h2>
+<h3>Simple template</h3>
+<p>This example shows the simplest use of a
+<code><a href="wt.html#globaltemplate">GlobalTemplate</a></code>. The first
+HTML file shown is placed in the <code>our_template.html</code> file. This HTML
+then does not need to be repeated for each individual page on the site,
+<code>wt</code> automatically outputs the template HTML with the individual
+page HTML inserted at the appropriate point. Therefore the individual page HTML
+files are not complete HTML files (i.e. they do not start with
+<code>&lt;html&gt;</code>), they are just the fragments required to complete
+the global template.</p>
+<p class="html"><code>&lt;html&gt;&lt;head&gt;<br />
+&lt;title&gt;Title for every page&lt;/title&gt;&lt;/head&gt;<br />
+&lt;body&gt;&lt;h1&gt;Heading for every page&lt;/h1&gt;<br />
+&lt;!--wt:_page/--&gt;<br />
+&lt;/body&gt;&lt;/html&gt;</code></p>
+<p class="html"><code>&lt;p&gt;This is an individual page.&lt;/p&gt;</code></p>
+<p class="code"><code>class template(wt.GlobalTemplate):<br />
+&nbsp;&nbsp;def template_name(self):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;return self.wt.etc + "/our_template.html"<br />
+<br />
+class main(template):<br />
+&nbsp;&nbsp;class page(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;pass</code></p>
+
+<h3>Overriding <code>GlobalTemplate</code></h3>
+<p>This example is a bit more interesting. The global HTML template contains
+a dynamic replacement. In the individual page code, the template class can be
+used unchanged, or <code>title</code> can be overridden to change the template
+on this page. In this way you simultaneously get the benefits of shared code
+for the global template, and the ability to override particular properties of
+the template on individual pages.</p>
+<p class="html"><code>&lt;html&gt;&lt;head&gt;<br />
+&lt;title&gt;$$title$$&lt;/title&gt;&lt;/head&gt;<br />
+&lt;body&gt;&lt;h1&gt;Heading for every page&lt;/h1&gt;<br />
+&lt;!--wt:_page/--&gt;<br />
+&lt;/body&gt;&lt;/html&gt;</code></p>
+<p class="html"><code>&lt;p&gt;This page is $$description$$.&lt;/p&gt;</code></p>
+<p class="code"><code>class template(wt.GlobalTemplate):<br />
+&nbsp;&nbsp;title = "Default title"<br />
+&nbsp;&nbsp;def template_name(self):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;return self.wt.etc + "/our_template.html"<br />
+<br />
+class main(template):<br />
+&nbsp;&nbsp;title = "Title for this page"<br />
+&nbsp;&nbsp;class page(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def description(self):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return "super"</code></p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
