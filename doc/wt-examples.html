@@ -84,5 +84,77 @@ has any characters that would be special to URLs encoded.</p>
 &nbsp;&nbsp;&nbsp;&nbsp;def id(self): return 123<br />
 &nbsp;&nbsp;&nbsp;&nbsp;def title(self): return "this is the title"</code></p>
 
+<h3>Overriding <code>main</code></h3>
+<p>This example demonstrates overriding the <code>main</code> method of a
+section. In this case it simply decides whether or not to output the
+contents of the section depending on whether or not a form variable
+<code>show</code> was present in the request. The section could contain
+replacements and sub-sections as usual, although in this simple example it
+contains only text.</p>
+<p class="html"><code>&lt;!--wt:section--&gt;<br />
+...content goes here...<br />
+&lt;!--wt:/section--&gt;</code></p>
+<p class="code"><code>class main(wt.TemplateCode):<br />
+&nbsp;&nbsp;class section(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def main(self, template):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if self.req.params.has_key("show"):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template)</code></p>
+
+<h3>Repeating sections</h3>
+<p>This example builds on the last to show how you can output a section
+multiple times, with different replacements each time. Again, in the real world
+you would presumably be fetching values from a database to display to the
+user.</p>
+<p class="html"><code>&lt;!--wt:section--&gt;<br />
+&lt;p&gt;This is paragraph number $$num$$.&lt;/p&gt;<br />
+&lt;!--wt:/section--&gt;</code></p>
+<p class="code"><code>class main(wt.TemplateCode):<br />
+&nbsp;&nbsp;class section(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def main(self, template):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for self.num in xrange(1, 11):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template)</code></p>
+
+<h3>Alternating sections</h3>
+<p>This example demonstrates the <code>selected</code> parameter to
+<code><a href="wt.html#templatecode:process">wt.TemplateCode.process</a></code>.
+It also demonstrates subsections, and using inheritance to share code between
+sections. The main section is output ten times with incrementing values of
+<code>num</code>, but different subsections are used depending on whether the
+number is odd or even. When <code>self.process(template, "odd")</code> is
+called, only subsections called <code>odd</code> are output, all other sections
+are ignored completely (and their associated code classes are not called).</p>
+<p>The other interesting point about this example is that, while the HTML for
+the <code>odd</code> and <code>even</code> sections are different, the code is
+similar. We save on duplication by defining a class called <code>subsec</code>
+which <code>odd</code> and <code>even</code> then subclass. The <code>num</code>
+method is thus shared between both while the <code>colour</code> class variable
+is overridden by <code>odd</code>.</p>
+<p class="html"><code>&lt;!--wt:section--&gt;<br />
+&lt;!--wt:odd--&gt;<br />
+&lt;p style="border: solid $$=colour$$"&gt;This is paragraph number $$num$$,<br />
+which is an odd number.&lt;/p&gt;<br />
+&lt;!--wt:/odd--&gt;<br />
+&lt;!--wt:even--&gt;<br />
+&lt;p style="border: solid $$=colour$$"&gt;This is paragraph number $$num$$,<br />
+which is an even number.&lt;/p&gt;<br />
+&lt;!--wt:/even--&gt;<br />
+&lt;!--wt:/section--&gt;</code></p>
+<p class="code"><code>class main(wt.TemplateCode):<br />
+&nbsp;&nbsp;class section(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;class subsec(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;colour = "black"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;def num(self):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.outer.num<br />
+&nbsp;&nbsp;&nbsp;&nbsp;class odd(subsec):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;colour = "blue"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;class even(subsec):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pass<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def main(self, template):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for self.num in xrange(1, 11):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if self.num &amp; 1:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template, "odd")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.process(template, "even")</code></p>
+
 <p class="cvsid">$Id$</p>
 </body></html>
