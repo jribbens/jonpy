@@ -254,8 +254,9 @@ class Connection(threading.Thread):
       
 
 class Server:
-  def __init__(self, handler_types):
+  def __init__(self, handler_types, max_requests = 0):
     self.handler_types = handler_types
+    self.max_requests = max_requests + 1
 
   def log(self, level, message):
     if log_level >= level:
@@ -277,6 +278,11 @@ class Server:
         return
     sock.setblocking(1)
     while 1:
+      if self.max_requests > 0:
+        self.max_requests -= 1
+        if self.max_requests <= 0:
+          self.log(1, "reached max_requests, exiting")
+          break
       (newsock, addr) = sock.accept()
       self.log(1, "accepted connection %d" % newsock.fileno())
       if web_server_addrs and addr not in web_server_addrs:
@@ -285,6 +291,7 @@ class Server:
         continue
       Connection(newsock, self.handler_types).start()
       del newsock
+    sock.close()
 
 
 class Request(cgi.Request, threading.Thread):
