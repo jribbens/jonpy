@@ -1,0 +1,4 @@
+# $Id$
+
+include LICENCE
+recursive-include doc *
