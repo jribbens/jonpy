@@ -6,5 +6,7 @@ h1 { text-align: center }
 h2 { text-align: left }
 h3 { text-align: left; margin-left: 25px }
 h4 { text-align: left; margin-left: 50px }
-.code { border: solid green; white-space: nowrap }
+code { white-space: nowrap }
+.html { border: solid blue }
+.code { border: solid green }
 .cvsid { margin-left: auto; font-size: xx-small }
