@@ -182,7 +182,8 @@ which is an even number.&lt;/p&gt;<br />
 <h3>Simple template</h3>
 <p>This example shows the simplest use of a
 <code><a href="wt.html#globaltemplate">GlobalTemplate</a></code>. The first
-HTML file shown is placed in the <code>our_template.html</code> file. This HTML
+HTML file shown is placed in the <code>template.html</code> file in the
+<code><a href="wt.html#handler:etc">etc</a></code> directory. This HTML
 then does not need to be repeated for each individual page on the site,
 <code>wt</code> automatically outputs the template HTML with the individual
 page HTML inserted at the appropriate point. Therefore the individual page HTML
@@ -195,11 +196,7 @@ the global template.</p>
 &lt;!--wt:_page/--&gt;<br />
 &lt;/body&gt;&lt;/html&gt;</code></p>
 <p class="html"><code>&lt;p&gt;This is an individual page.&lt;/p&gt;</code></p>
-<p class="code"><code>class template(wt.GlobalTemplate):<br />
-&nbsp;&nbsp;def template_name(self):<br />
-&nbsp;&nbsp;&nbsp;&nbsp;return self.wt.etc + "/our_template.html"<br />
-<br />
-class main(template):<br />
+<p class="code"><code>class main(wt.GlobalTemplate):<br />
 &nbsp;&nbsp;class page(wt.TemplateCode):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;pass</code></p>
 
