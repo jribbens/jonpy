@@ -10,6 +10,7 @@
 <code><a href="cgi.html">cgi</a></code> module to allow code originally
 written with the CGI protocol in mind to be used unchanged with the
 <a href="http://www.modpython.org/">mod_python</a> module.</p>
+
 <h2>Usage</h2>
 <p>See the documentation for the <code><a href="cgi.html">cgi</a></code>
 module for information on how to use the CGI abstraction layer. The only
@@ -25,6 +26,25 @@ class Handler(cgi.Handler):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")<br />
 def handler(modpy_req):<br />
 &nbsp;&nbsp;return modpy.Request(Handler).process(modpy_req)</code></p>
+
+<h2>Usage with <code><a href="wt.html">wt</a></code></h2>
+<p>When using <code>modpy</code> with the <code><a href="wt.html">wt</a></code>
+templating system, the Apache setup is slightly different (although all your
+templates and page code will be identical).</p>
+<p>Most of the setup is the same as <a href="wt-examples.html#apache">usual</a>,
+however the configuration for the <code>/wt/</code> directory is different.
+Instead of using a CGI script as the handler, a mod_python handler is used
+instead:</p>
+<p class="code"><code>SetHandler python-program<br />
+PythonHandler handler</code></p>
+<p>You then place the code that you would usually put in
+<code>/cgi-bin/wt.py</code> into <code>/wt/handler.py</code>. The global
+function <code>handler</code> in this file will be called by mod_python to
+handle requests, so you should also add this function, which should use
+<code>wt.<a href="wt.html#handler">wt.Handler</a></code> or your subclass of it
+to handle the request:</p>
+<p class="code"><code>def handler(modpy_req):<br />
+&nbsp;&nbsp;return modpy.Request(wt.Handler).process(modpy_req)</code></p>
 
 <h2><a name="error" id="error">class: Error(Exception)</a></h2>
 <p>The base class for all exceptions defined by the <code>modpy</code>
@@ -61,8 +81,8 @@ When using the CGI protocol, the Apache web server will issue an
 is not possible and you should not output <code>Location</code> headers which
 do not contain absolute URLs.</p>
 <p>Example:</p>
-<p class="code"><code>def handler(modpy_req):<br >
-&nbsp;&nbsp;return modpy.Request(wt.Handler).process(modpy_req)</p>
+<p class="code"><code>def handler(modpy_req):<br />
+&nbsp;&nbsp;return modpy.Request(wt.Handler).process(modpy_req)</code></p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
