@@ -2,10 +2,18 @@
 
 import sys, re, os, Cookie, errno
 
+"""Object-oriented CGI interface."""
+
 
 class Error(Exception):
+  """The base class for all exceptions thrown by this module."""
   pass
 class SequencingError(Error):
+  """The exception thrown when functions are called out of order."""
+  """
+  For example, if you try to call a function altering the headers of your
+  output when the headers have already been sent.
+  """
   pass
 
 
@@ -16,29 +24,48 @@ _html_encodes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
                   "'": "&#39;", "+": "&#43;" }
 
 def html_encode(raw):
+  """Return the string parameter HTML-encoded."""
+  """
+  Specifically, the following characters are encoded as entities:
+    & < > " ' +
+  """
   return re.sub(_html_encre, lambda m: _html_encodes[m.group(0)], str(raw))
 
 def url_encode(raw):
+  """Return the string parameter URL-encoded."""
   return re.sub(_url_encre, lambda m: "%%%02X" % ord(m.group(0)), str(raw))
 
 def url_decode(enc):
+  """Return the string parameter URL-decoded (including '+' -> ' ')."""
   s = enc.replace("+", " ")
   return re.sub(_url_decre, lambda m: chr(int(m.group(1), 16)), s)
 
 
 class Request:
+  """All the information about a CGI-style request, including how to respond."""
+  """Headers are buffered in a list before being sent. They are either sent
+  on request, or when the first part of the body is sent. If requested, the
+  body output can be buffered as well."""
+
   def __init__(self, handler_type):
+    """Create a Request object which uses handler_type as its handler."""
+    """An object of type handler_type, which should be a subclass of
+    Handler, will be used to handle requests."""
     self._handler_type = handler_type
     self._doneHeaders = 0
     self._headers = []
     self._bufferOutput = 0
     self._output = []
     self.params = {}
+    """The CGI form variables passed from the client."""
     self.cookies = Cookie.SimpleCookie()
+    """The HTTP cookies passed from the client."""
     self.aborted = 0
+    """True if this request has been aborted (i.e. the client has gone.)"""
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
 
   def output_headers(self):
+    """Output the list of headers."""
     if self._doneHeaders:
       raise SequencingError, "output_headers() called twice"
     for pair in self._headers:
@@ -47,17 +74,20 @@ class Request:
     self._doneHeaders = 1
 
   def clear_headers(self):
+    """Clear the list of headers."""
     if self._doneHeaders:
       raise SequencingError, "cannot clear_headers() after output_headers()"
     self._headers = []
 
   def add_header(self, hdr, val):
+    """Add a header to the list of headers."""
     if self._doneHeaders:
       raise SequencingError, \
         "cannot add_header(%s) after output_headers()" % `hdr`
     self._headers.append((hdr, val))
 
   def set_header(self, hdr, val):
+    """Add a header to the list of headers, replacing any existing values."""
     if self._doneHeaders:
       raise SequencingError, \
         "cannot set_header(%s) after output_headers()" % `hdr`
@@ -65,6 +95,7 @@ class Request:
     self._headers.append((hdr, val))
 
   def del_header(self, hdr):
+    """Removes all values for a header from the list of headers."""
     if self._doneHeaders:
       raise SequencingError, \
         "cannot del_header(%s) after output_headers()" % `hdr`
@@ -77,11 +108,13 @@ class Request:
         break
 
   def set_buffering(self, f):
+    """Specifies whether or not body output is buffered."""
     if self._output and not f:
       self.flush()
     self._bufferOutput = f
 
   def flush(self):
+    """Flushes the body output."""
     if not self._doneHeaders:
       self.output_headers()
     for s in self._output:
@@ -90,20 +123,31 @@ class Request:
     self._flush()
 
   def clear_output(self):
+    """Discards the contents of the body output buffer."""
     if not self._bufferOutput:
       raise SequencingError, "cannot clear output when not buffering"
     self._output = []
 
   def error(self, s):
+    """Records an error message from the program."""
+    """The output is logged or otherwise stored on the server. It does not
+    go to the client.
+    
+    Must be overridden by the sub-class."""
     raise NotImplementedError, "error must be overridden"
 
   def _write(self, s):
+    """Sends some data to the client."""
+    """Must be overridden by the sub-class."""
     raise NotImplementedError, "_write must be overridden"
 
   def _flush(self):
+    """Flushes data to the client."""
+    """Must be overridden by the sub-class."""
     raise NotImplementedError, "_flush must be overridden"
 
   def write(self, s):
+    """Sends some data to the client."""
     if self._bufferOutput:
       self._output.append(str(s))
     else:
@@ -112,8 +156,9 @@ class Request:
       self._write(s)
 
   def _mergevars(self, encoded):
-    """Extracts the variable-value pairs from the URL-encoded input string and
-    merges them into the output dictionary. Variable-value pairs are separated
+    """Parse variable-value pairs from a URL-encoded string."""
+    """Extract the variable-value pairs from the URL-encoded input string and
+    merge them into the output dictionary. Variable-value pairs are separated
     from each other by the '&' character. Missing values are allowed.
 
     If the variable name ends with a '*' character, then the value that is
@@ -139,9 +184,9 @@ class Request:
         self.params[name] = val
 
   def _mergemime(self, encoded):
-    """Extracts the variable-value pairs from the URL-encoded input string and
-    merges them into the output dictionary. Variable-value pairs are separated
-    from each other by the '&' character. Missing values are allowed.
+    """Parses variable-value pairs from a MIME-encoded input stream."""
+    """Extract the variable-value pairs from the MIME-encoded input file and
+    merge them into the output dictionary.
 
     If the variable name ends with a '*' character, then the value that is
     placed in the dictionary will be a list. This is useful for multiple-value
@@ -173,6 +218,7 @@ class Request:
         self.params[name] = entity.body
 
   def read_cgi_data(self, environ, inf):
+    """Read input data from the client and set up the object attributes."""
     if environ.has_key("QUERY_STRING"):
       self._mergevars(environ["QUERY_STRING"])
     if environ.get("REQUEST_METHOD") == "POST":
@@ -184,6 +230,7 @@ class Request:
       self.cookies.load(environ["HTTP_COOKIE"])
 
   def traceback(self):
+    """Output an exception traceback to the client, and to the local log."""
     import traceback
     exc = sys.exc_info()
     try:
@@ -207,6 +254,8 @@ class Request:
 
 
 class CGIRequest(Request):
+ """An implementation of Request which uses the standard CGI interface."""
+
   def __init__(self, handler_type):
     Request.__init__(self, handler_type)
     self.__out = sys.stdout
@@ -214,6 +263,7 @@ class CGIRequest(Request):
     self.environ = os.environ
 
   def process(self):
+    """Read the CGI input and create and run a handler to handle the request."""
     self.read_cgi_data(self.environ, sys.stdin)
     try:
       self._handler_type().process(self)
@@ -246,5 +296,7 @@ class CGIRequest(Request):
 
 
 class Handler:
+  """Handle a request."""
   def process(self, req):
+    """Handle a request. req is a Request object."""
     raise NotImplementedError, "handler process function must be overridden"
