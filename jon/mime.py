@@ -68,7 +68,7 @@ def parse_content_disposition(s):
   # skip whitespace before disposition
   while i < len(s) and s[i] in _whitespace: i+= 1
   if i >= len(s):
-    raise Error, "Unexpect end of string before disposition"
+    raise Error, "Unexpected end of string before disposition"
   # disposition
   disposition = ""
   while i < len(s) and s[i] in _tokenchars:
