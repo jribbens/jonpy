@@ -225,10 +225,10 @@ class FileSession(Session):
 
   def _find_basedir(basedir):
     if basedir is None:
-      tmp = os.environ.get("TMPDIR", "/tmp")
-      while tmp[-1] == "/":
-        tmp = tmp[:-1]
-      basedir = "%s/jon-sessions-%d" % (tmp, os.getuid())
+      basedir = os.environ.get("TMPDIR", "/tmp")
+    while basedir[-1] == "/":
+      basedir = basedir[:-1]
+    basedir = "%s/jon-sessions-%d" % (basedir, os.getuid())
     try:
       st = os.lstat(basedir)
       if st[4] != os.getuid():
