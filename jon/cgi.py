@@ -360,6 +360,7 @@ class Request(object):
     if not self._doneHeaders:
       self.output_headers()
     self._write(self._output.getvalue())
+    self._pos += self._output.tell()
     self._output.seek(0, 0)
     self._output.truncate()
     self._flush()
