@@ -62,6 +62,8 @@ class Request:
     """The HTTP cookies passed from the client."""
     self.aborted = 0
     """True if this request has been aborted (i.e. the client has gone.)"""
+    self.environ = {}
+    """The environment variables associated with this request."""
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
 
   def output_headers(self):
