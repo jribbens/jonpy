@@ -40,7 +40,7 @@ processing.</p>
 <p>Example:</p>
 <p class="code"><code>class Handler(wt.Handler):<br />
 &nbsp;&nbsp;def process(self, req):<br />
-&nbsp;&nbsp;&nbsp;&nbsp;self.session = session.Session(req, "s3cr3t")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;self.session = session.FileSession(req, "s3cr3t")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;if not self.session.relocated:<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wt.Handler.process(self, req)<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.session.save()</code></p>
