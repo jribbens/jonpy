@@ -38,11 +38,15 @@ def html_encode(raw):
   Specifically, the following characters are encoded as entities:
     & < > " ' +
   """
-  return re.sub(_html_encre, lambda m: _html_encodes[m.group(0)], str(raw))
+  if not isinstance(raw, unicode):
+    raw = str(raw)
+  return re.sub(_html_encre, lambda m: _html_encodes[m.group(0)], raw)
 
 def url_encode(raw):
   """Return the string parameter URL-encoded."""
-  return re.sub(_url_encre, lambda m: "%%%02X" % ord(m.group(0)), str(raw))
+  if not isinstance(raw, unicode):
+    raw = str(raw)
+  return re.sub(_url_encre, lambda m: "%%%02X" % ord(m.group(0)), raw)
 
 def url_decode(enc):
   """Return the string parameter URL-decoded (including '+' -> ' ')."""
