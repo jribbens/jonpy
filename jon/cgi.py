@@ -185,7 +185,7 @@ class Request:
       else:
         self.params[name] = val
 
-  def _mergemime(self, encoded):
+  def _mergemime(self, contenttype, encoded):
     """Parses variable-value pairs from a MIME-encoded input stream."""
     """Extract the variable-value pairs from the MIME-encoded input file and
     merge them into the output dictionary.
@@ -195,7 +195,7 @@ class Request:
     fields. If the variable name ends with a '!' character (before the '*' if
     present) then the value will be a mime.Entity object."""
     import mime
-    headers = "Content-Type: %s\n" % os.environ["CONTENT_TYPE"]
+    headers = "Content-Type: %s\n" % contenttype
     body = encoded.read()
     for entity in mime.Entity(body, mime=1, headers=headers).entities:
       if not entity.content_disposition:
@@ -225,7 +225,7 @@ class Request:
       self._mergevars(environ["QUERY_STRING"])
     if environ.get("REQUEST_METHOD") == "POST":
       if environ.get("CONTENT_TYPE", "").startswith("multipart/form-data"):
-        self._mergemime(inf)
+        self._mergemime(environ["CONTENT_TYPE"], inf)
       else:
         self._mergevars(inf.read(int(environ.get("CONTENT_LENGTH", "-1"))))
     if environ.has_key("HTTP_COOKIE"):
