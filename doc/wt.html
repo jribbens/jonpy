@@ -36,16 +36,16 @@ code file, and each section corresponds to a nested class.</p>
 <p>Replacements consist of two dollar signs
 followed by an identifier name (which may contain alphanumerics and underscore)
 and another two dollar signs - for example, <code>$$title$$</code>. You then
-supply a method of the same name in the current section class, the return value
-of which will be output instead of the literal text of the replacement. Names
-beinning with an underscore are reserved.</p>
-<p>By default, the return value from the method will be passed through
+supply a variable or method of the same name in the current section class, the
+value or return value of which will be output instead of the literal text of
+the replacement. Names beinning with an underscore are reserved.</p>
+<p>By default, the value will be passed through
 <code><a href="cgi.html#html_encode">cgi.html_encode</a></code> before being
-output. Doing this by default simplifies programming since it is almost always
+output.  Doing this by default simplifies programming since it is almost always
 the correct option. It also means that your code is secure by default against
-<a href="http://www.cert.org/tech_tips/malicious_code_mitigation.html">cross-site
-scripting attacks</a>. (You must also make sure that the browser knows what
-character set you are using, but since
+<a href="http://www.cert.org/tech_tips/malicious_code_mitigation.html">cross-site scripting attacks</a>.
+(You must also make sure that the browser knows what character set you are
+using, but since
 <code><a href="cgi.html#request:__init__">cgi.Request.__init__</a></code>
 automatically specifies the character set for you in the
 <code>Content-Type</code> header, you are secure by default here as well.)</p>
@@ -121,9 +121,10 @@ class this class is derived from. If there is no enclosing class then
 <code><strong>selected</strong></code>: <code>None</code>, or a string, or
 a sequence of strings</p>
 <p>This method is called to process a template string. The
-<code>template</code> parameter contents the template to be processed. Methods
-to satisfy <a href="#replacements">replacements</a> and classes to satisfy
-<a href="#sections">sections</a> are looked for inside <code>self</code>.</p>
+<code>template</code> parameter contents the template to be processed. Variables
+and methods to satisfy <a href="#replacements">replacements</a> and classes to
+satisfy <a href="#sections">sections</a> are looked for inside
+<code>self</code>.</p>
 <p>If <code>selected</code> is <code>None</code> then all top-level sections in
 the template string are executed. If it is a string or sequence of strings then
 only top-level sections with a name matching that string or in that sequence
