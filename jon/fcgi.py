@@ -280,7 +280,7 @@ class Request(cgi.Request, threading.Thread):
         rec.type = type
         rec.request_id = self.__request_id
         if pos == 0 and len(s) <= 65535:
-          # (avoid copying in the common case of s < 65535 bytes)
+          # (avoid copying in the common case of s <= 65535 bytes)
           rec.content_data = s
         else:
           rec.content_data = s[pos:pos+65535]
