@@ -382,7 +382,10 @@ class Server:
 
   def run(self):
     self.log(1, "Server.run()")
-    web_server_addrs = os.environ.get("FCGI_WEB_SERVER_ADDRS", "").split(",")
+    if os.environ.has_key("FCGI_WEB_SERVER_ADDRS"):
+      web_server_addrs = os.environ["FCGI_WEB_SERVER_ADDRS"].split(",")
+    else:
+      web_server_addrs = None
     self.log(1, "web_server_addrs = %s" % `web_server_addrs`)
     self._sock = socket.fromfd(sys.stdin.fileno(), socket.AF_INET,
       socket.SOCK_STREAM)
@@ -408,8 +411,10 @@ class Server:
         if x[0] == errno.EBADF:
           break
         raise
-      self.log(1, "accepted connection %d" % newsock.fileno())
-      if web_server_addrs and addr not in web_server_addrs:
+      self.log(1, "accepted connection %d from %s" %
+        (newsock.fileno(), `addr`))
+      if web_server_addrs and (len(addr) != 2 or \
+        addr[0] not in web_server_addrs):
         self.log(1, "not in web_server_addrs - rejected")
         newsock.close()
         continue
