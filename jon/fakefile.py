@@ -60,8 +60,8 @@ class FakeInput:
         return self.read(pos + 1)
       if size >= 0 and len(self._buf) >= size:
         return self.read(size)
-      if not self._read_more():
-        return self.read(-1)
+      if not self._read_more(self.chunksize):
+        return self.read()
 
   def readlines(self, size=-1):
     self._check_open()
