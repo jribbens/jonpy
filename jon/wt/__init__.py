@@ -132,7 +132,7 @@ class Handler(cgi.Handler):
       template = self.req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
       if template:
         return template
-    raise "Couldn't determine template filename"
+    raise Exception, "Couldn't determine template filename"
 
   def _get_etc(self):
     sp = os.path.split(self.req.environ["DOCUMENT_ROOT"])
