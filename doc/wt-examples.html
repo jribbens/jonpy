@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>wt module examples</title>
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head><body>
+<h1>wt module examples</h1>
+<h2>Synopsis</h2>
+<p>The <code><a href="wt.html">wt</a></code> module provides an object-oriented
+HTML templating system. This page contains examples of how to perform various
+common operations using <code>wt</code>.</p>
+
+<h2><a name="apache" id="apache">Apache Configuration</a></h2>
+<p><code>wt</code> uses a dual-hierarchy system to separate and identify data
+(HTML) files and associated code files. This requires some configuration of the
+web server in order to allow it to provide the correct information to
+<code>wt</code>. An example configuration for
+<a href="http://httpd.apache.org/">Apache</a> using
+<a href="http://httpd.apache.org/docs/mod/mod_rewrite.html">mod_rewrite</a>
+is shown below:</p>
+<p class="code"><code>&lt;VirtualHost 192.168.0.1&gt;<br />
+&nbsp;&nbsp;ServerName www.example.com<br />
+&nbsp;&nbsp;&nbsp;...<br />
+&nbsp;&nbsp;RewriteEngine on<br />
+&nbsp;&nbsp;RewriteCond %{DOCUMENT_ROOT}/wt/$1.py -f<br />
+&nbsp;&nbsp;RewriteRule ^/(.*)$ /wt/$1.py [PT,E=WT_TEMPLATE_URL:/$1,E=WT_TEMPLATE_FILENAME:%{DOCUMENT_ROOT}/$1]<br />
+&nbsp;&nbsp;&lt;Location /wt/&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Action wt-handler /cgi-bin/wt.py<br />
+&nbsp;&nbsp;&nbsp;&nbsp;SetHandler wt-handler<br />
+&nbsp;&nbsp;&lt;/Location&gt;<br />
+&lt;/VirtualHost&gt;</code></p>
+<p>The <code>RewriteCond</code> line means that the <code>RewriteRule</code>
+only takes effect if a code file corresponding to the currently-requested data
+file exists in the code directory hierarchy. This means that you can put
+ordinary static data files in the data directory hierarchy and they will be
+served to the user by the web server as usual without any intervention by
+<code>wt</code>.</p>
+<p>The <code>RewriteRule</code> line rewrites the request URL, which originally
+identified the data file, to point to the code file instead. As it does this it
+stores information about the data file into environment variables for
+<code><a href="wt.html#handler:process">wt.Handler.process</a></code> to
+retrieve later.</p>
+<p>Finally the <code>&lt;Location&gt;</code> block uses normal Apache directives
+to tell the web server to execute the code files using
+<code>/cgi-bin/wt.py</code>, which is effectively the central despatch point
+for all <code>wt</code> pages within the site. The simplest possible version
+of this file would look as follows:</p>
+<p class="code"><code>#!/usr/local/bin/python<br />
+import jon.wt as wt<br />
+import jon.cgi as cgi<br />
+<br />
+cgi.CGIRequest(wt.Handler).process()</code></p>
+
+<h2><a name="templatecode" id="templatecode"></a><a href="wt.html#templatecode">TemplateCode</a> examples</h2>
+<h3>Simple replacements</h3>
+<p>This example simply displays the form variable <code>foo</code> as part of
+the output HTML. Note that it does not attempt to check whether or not a form
+variable called <code>foo</code> was actually passed to the server by the
+user's web browser, and Python will throw an exception if it wasn't. This is
+deliberate - if something "shouldn't happen" (e.g. if this page should never
+be called without a <code>foo</code> parameter unless the user has been
+inventing URLs) then just let an exception be thrown and caught by the
+top-level handler. If you do wish to check whether or not the parameter was
+passed then you can use <code>self.req.params.has_key</code> or
+<code>self.req.params.get</code>.</p>
+<p class="html"><code>&lt;p&gt;The 'foo' parameter is: $$foo$$.&lt;/p&gt;</code></p>
+<p class="code"><code>class main(wt.TemplateCode):<br />
+&nbsp;&nbsp;def foo(self):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;return self.req.params["foo"]</code></p>
+
+<h3>Simple sections</h3>
+<p>This example mostly demonstrates just the syntax of a section. The
+section name in the HTML file corresponds to a nested class name in the code
+file. Obviously in a real world situation the <code>id</code> and
+<code>title</code> would not be static but would be calculated or fetched,
+e.g. from a database. Note also the way that the replacement inside a URL is
+done using the <code>%</code> encoding modifier so that the replacement text
+has any characters that would be special to URLs encoded.</p>
+<p class="html"><code>&lt;!--wt:newsitem--&gt;<br />
+&lt;a href="article.html?id=$$%id$$"&gt;$$title$$&lt;/a&gt;<br />
+&lt;!--wt:/newsitem--&gt;</code></p>
+<p class="code"><code>class main(wt.TemplateCode):<br />
+&nbsp;&nbsp;class newsitem(wt.TemplateCode):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def id(self): return 123<br />
+&nbsp;&nbsp;&nbsp;&nbsp;def title(self): return "this is the title"</code></p>
+
+<p class="cvsid">$Id$</p>
+</body></html>
