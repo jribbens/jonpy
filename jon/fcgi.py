@@ -137,12 +137,13 @@ class InputStream:
 
 
 class Connection(threading.Thread):
-  def __init__(self, socket, handler_types, *args, **kwargs):
-    threading.Thread.__init__(self, *args, **kwargs)
+  def __init__(self, socket, handler_types, params=None, *t_args, **t_kwargs):
+    threading.Thread.__init__(self, *t_args, **t_kwargs)
     self.socket = socket
     self.socketlock = threading.Lock()
     self.handler_types = handler_types
     self.fileno = self.socket.fileno()
+    self.params = params
 
   def log(self, level, request_id, message):
     if log_level >= level:
@@ -194,7 +195,9 @@ class Connection(threading.Thread):
         reply.request_id = 0
         reply_data = NameValueData()
         for nameval in data.values:
-          if nameval[0] == "FCGI_MAX_CONNS":
+          if self.params and nameval[0] in self.params:
+            reply_data.values.append(nameval[0], str(self.params[nameval[0]]))
+          elif nameval[0] == "FCGI_MAX_CONNS":
             reply_data.values.append(("FCGI_MAX_CONNS", "10"))
           elif nameval[0] == "FCGI_MAX_REQS":
             reply_data.values.append(("FCGI_MAX_REQS", "10"))
@@ -264,9 +267,10 @@ class Connection(threading.Thread):
       
 
 class Server:
-  def __init__(self, handler_types, max_requests=0):
+  def __init__(self, handler_types, max_requests=0, params=None):
     self.handler_types = handler_types
     self.max_requests = max_requests
+    self.params = params
 
   def log(self, level, message):
     if log_level >= level:
@@ -294,7 +298,7 @@ class Server:
         self.log(1, "not in web_server_addrs - rejected")
         newsock.close()
         continue
-      Connection(newsock, self.handler_types).start()
+      Connection(newsock, self.handler_types, params=self.params).start()
       del newsock
       if self.max_requests > 0:
         self.max_requests -= 1
