@@ -286,7 +286,7 @@ the base class's <code><a href="#session:__init__">__init__</a></code>
 method.</p>
 <p>The table must have at least the following fields:</p>
 <p class="code"><code>CREATE TABLE sessions (<br />
-&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VARCHAR(8) NOT NULL,<br />
+&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;INT UNSIGNED NOT NULL,<br />
 &nbsp;&nbsp;hash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VARCHAR(8) NOT NULL,<br />
 &nbsp;&nbsp;data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BLOB NOT NULL,<br />
 &nbsp;&nbsp;created&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;INT UNSIGNED NOT NULL,<br />
