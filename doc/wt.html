@@ -61,6 +61,7 @@ browser.</p>
 <p class="code"><code>class main(wt.TemplateCode):<br />
 &nbsp;&nbsp;def id(self): return 123<br />
 &nbsp;&nbsp;def title(self): return "this is the title"</code></p>
+
 <h3><a name="sections" id="sections">Sections</a></h3>
 <p>Sections begin with an HTML comment containing only <code>wt:</code> and
 an identifier name (which may contain alphanumerics and underscore) - for
@@ -207,8 +208,10 @@ associated with a web site that should not be under the
 <code><a href="cgi.html#request">cgi.Request</a></code> subclass</p>
 <p>This method may be overridden by subclasses. It inspects
 <code>req.<a href="cgi.html#request:environ">environ</a></code> to determine
-the template and code filenames. See the <a href="wt-examples.html#apache">wt
-examples page</a> for how to set up
+the template and code filenames. The code file should contain a subclass of
+<code>wt.<a href="#templatecode">TemplateCode</a></code> named
+<code>main</code>, which is passed the entire template file. See the
+<a href="wt-examples.html#apache">wt examples page</a> for how to set up
 <a href="http://httpd.apache.org/">Apache</a> so that <code>wt</code> knows
 what's going on.</p>
 <p>You can add code to run before and/or after every request by overriding
