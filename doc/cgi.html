@@ -171,7 +171,7 @@ were not enough occurrences of it to satisfy the index requirement,
 same name already exist in the array, then they are deleted before the new
 header is added. If the headers have already been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
-raised. Header names are matched case0insensitively.</p>
+raised. Header names are matched case-insensitively.</p>
 <p>Example:</p>
 <p class="code"><code>req.set_header("Content-Type", "image/jpeg")</code></p>
 
@@ -180,7 +180,7 @@ raised. Header names are matched case0insensitively.</p>
 <p>Remove all headers with the name <code>hdr</code> from the array of HTTP
 headers. If the headers have already been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
-raised. Header names are matched case0insensitively.</p>
+raised. Header names are matched case-insensitively.</p>
 
 <h4><a name="request:set_buffering" id="request:set_buffering"><code><strong>set_buffering(self, f)</strong></code></a></h4>
 <p><code><strong>f</strong></code>: true or false value</p>
