@@ -55,7 +55,7 @@ server.</p>
 <h3>Public Instance Variables</h3>
 <h4><a name="request:params" id="request:params"><code><strong>params</strong></code></a></h4>
 <p>The <code>params</code> map contains the CGI form variables recovered
-from the <code>"QUERY_STRING"</code>, and in the case of <code>POST</code>
+from the <code>QUERY_STRING</code>, and in the case of <code>POST</code>
 requests, the input stream. In the case of each key, the name is a string and
 the type of the value depends on whether or not the name has one of a number of
 special suffixes.</p>
@@ -109,8 +109,8 @@ exit if the request has been aborted, but it is not necessary to do so.</p>
 <p>Create new <code>Request</code> instance. Instances of
 <code>handler_type</code> will be created to handle requests.</p>
 <p>The array of HTTP headers will be initialised to contain a
-<code>"Content-Type"</code> header with the value <code>"text/html;
-charset=iso-8859-1"</code>. If this is not appropriate then the content type
+<code>Content-Type</code> header with the value <code>text/html;
+charset=iso-8859-1</code>. If this is not appropriate then the content type
 should be overridden by specifying a new one with the
 <code><a href="#request:set_header">set_header</a></code> method.</p>
 
@@ -225,12 +225,16 @@ data is flushed to the client.</p>
 string parameter <code>encoded</code> and merges the key/value pairs found
 into the <code>self.<a href="#request:params">params</a></code> mapping.</p>
 
-<h4><a name="request:_mergemime" id="request:_mergemime"><code><strong>_mergemime(self, encoded)</strong></code></a></h4>
-<p><code><strong>encoded</strong></code>: file-like object</p>
+<h4><a name="request:_mergemime" id="request:_mergemime"><code><strong>_mergemime(self, contenttype, encoded)</strong></code></a></h4>
+<p><code><strong>contenttype</strong></code>: string<br />
+<code><strong>encoded</strong></code>: file-like object</p>
 <p>This is a utility method for the use of subclasses of the
 <code><a href="#request">Request</a></code> class. The parameter
 <code>encoded</code> must provide a <code>file</code>-like <code>read()</code>
-method which is then used to parse a MIME-encoded input stream. MIME sections
+method which is then used to parse a MIME-encoded input stream.
+<code>contenttype</code> should contain the value of the
+<code>Content-Type</code> header for the stream (which should presumably
+always indicate the <code>multipart/form-data</code> type). MIME sections
 found with <code>Content-Disposition: form-data</code> are merged into the
 <code>self.<a href="#request:params">params</a></code> mapping.</p>
 
@@ -241,16 +245,16 @@ found with <code>Content-Disposition: form-data</code> are merged into the
 <code><a href="#request">Request</a></code> class. Examines the environment
 strings contained in the map parameter <code>environ</code> as per the
 standard CGI protocol. If the <code>environ</code> variable
-<code>"QUERY_STRING"</code> is available then it is parsed using the
+<code>QUERY_STRING</code> is available then it is parsed using the
 <code><a href="#request:_mergevars">mergevars</a></code> method. If the
-<code>environ</code> variable <code>"REQUEST_METHOD"</code> is
-<code>"POST"</code> then the <code>inf</code> parameter (which must provide a
+<code>environ</code> variable <code>REQUEST_METHOD</code> is
+<code>POST</code> then the <code>inf</code> parameter (which must provide a
 <code>file</code>-like <code>read()</code> method) is used to read an input
 stream which is passed to either the
 <code><a href="#request:_mergevars">mergevars</a></code> method or the
 <code><a href="#request:_mergemime">mergemime</a></code> method depending
-on the <code>environ</code> variable <code>"CONTENT_TYPE"</code>. Finally,
-if the <code>environ</code> variable <code>"HTTP_COOKIE"</code> is available
+on the <code>environ</code> variable <code>CONTENT_TYPE</code>. Finally,
+if the <code>environ</code> variable <code>HTTP_COOKIE</code> is available
 then it is parsed into the
 <code>self.<a href="#request:cookies">cookies</a></code> instance variable.</p>
 
