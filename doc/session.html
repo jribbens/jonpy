@@ -19,6 +19,12 @@ determines what storage method is used - the module provides
 <code><a href="#filesession">FileSession</a></code> and
 <code><a href="#sqlsession">SQLSession</a></code>, or you can write your
 own.</p>
+<p>To store data in the session, you simply use it as a mapping.
+For example:</p>
+<p class="code"><code>if "basket" in self.session:<br />
+&nbsp;&nbsp;self.session["basket"].append(newitem)<br />
+else:<br />
+&nbsp;&nbsp;self.session["basket"] = [newitem]</code></p>
 <p>Sessions are identified by a unique 8-character hexadecimal string, which
 is usually generated randomly. This is paired with another 8-character
 hexadecimal string which is a keyed hash generated using the identifier and a
