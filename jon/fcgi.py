@@ -292,9 +292,14 @@ class Request(cgi.Request, threading.Thread):
     self.log(2, "New request running")
     self.log(2, "Calling handler")
     try:
-      self._handler_type().process(self)
+      handler = self._handler_type()
     except:
       self.traceback()
+    else:
+      try:
+        handler.process(self)
+      except:
+        handler.traceback(self)
     self.log(2, "Handler finished")
     self.flush()
     if self.aborted < 2:

@@ -300,14 +300,42 @@ to provide the code which handles a request.</p>
 <h4><a name="handler:process" id="handler:process"><code><strong>process(self, req)</strong></code></a></h4>
 <p><code><strong>req</strong></code>: object of type
 <code>cgi.<a href="#request">Request</a></code></p>
-<p>This method is called to process a request. The <code>req</code> parameter
-references the <code><a href="#request">Request</a></code> object (actually, an
-instance of a subclass of <code><a href="#request">Request</a></code>) which
-should be used to inspect the request and to send the response.</p>
+<p>This method must be overridden by subclasses. It is called to process a
+request. The <code>req</code> parameter references the
+<code><a href="#request">Request</a></code> object (actually, an instance of a
+subclass of <code><a href="#request">Request</a></code>) which should be used
+to inspect the request and to send the response.</p>
 <p>Note that even in multithreaded situations such as
 <a href="fcgi.html">FastCGI</a>, any individual instance of a
 <code>Handler</code> subclass will only have one <code>process</code> method
 executing at once.</p>
+
+<h4><a name="handler:traceback" id="handler:traceback"><code><strong>traceback(self, req)</strong></code></a></h4>
+<p><code><strong>req</strong></code>: object of type
+<code>cgi.<a href="#request">Request</a></code></p>
+<p>This method may be overridden by subclasses. It is called to handle an
+exception thrown by the <code><a href="#handler:process">process</a></code>
+method. The default implementation calls
+<code><a href="#traceback">traceback</a></code> to send a traceback to the
+error log, and outputs a generic error page to the browser.</p>
+
+<h2><a name="debughandler" id="debughandler"></a>class: DebugHandler(<a href="#handler">Handler</a>)</h2>
+<p>This class is identical to <code><a href="#handler">Handler</a></code>
+except that the default implementation of
+<code><a href="#debughandler:traceback">traceback</a></code> outputs debug
+information to the browser as well as to the error log. This class may be used
+during development to aid debugging but should never be used in a production
+environment since it will leak private information to the browser.</p>
+
+<h3>Public Methods</h3>
+<h4><a name="debughandler:traceback" id="debughandler:traceback"><code><strong>traceback(self, req)</strong></code></a></h4>
+<p><code><strong>req</strong></code>: object of type
+<code>cgi.<a href="#request">Request</a></code></p>
+<p>This method may be overridden by subclasses. It is called to handle an
+exception thrown by the <code><a href="#handler:process">process</a></code>
+method. The default implementation calls
+<code><a href="#traceback">traceback</a></code> to send a traceback to both the
+error log and the browser.</p>
 
 <h2>Globals</h2>
 <h3>Functions</h3>
@@ -344,6 +372,17 @@ and then decodes URL %-escapes.</p>
 <p>Example:</p>
 <p class="code"><code>&gt;&gt;&gt; cgi.url_decode("%3Cfoo%3E")<br />
 '&lt;foo&gt;'</code></p>
+
+<h4><a name="traceback" id="traceback"><code><strong>traceback(req, html=0)</strong></code></a></h4>
+<p><code><strong>req</strong></code>: object of type
+<code>cgi.<a href="#request">Request</a></code><br />
+<strong>html</strong>: true or false value</p>
+<p>This function should only be called while an exception is being handled
+(i.e. in a <code>raise</code> section). It emits a detailed traceback about
+the exception to the server's error log. If <code>html</code> references a
+true value then the traceback is also sent as HTML to the browser. If
+<code>html</code> is false then the browser output is not altered in any way,
+so it is up to the caller to arrange for suitable output to be sent.</p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
