@@ -40,11 +40,12 @@ instances of <code><a href="cgi.html#handler">cgi.Handler</a></code> subclasses
 to handle the requests.</p>
 
 <h3>Public Methods</h3>
-<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None)</strong></code></a></h4>
+<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None, request_type=Request)</strong></code></a></h4>
 <p><code><strong>handler_types</strong></code>: map from FastCGI request types
 to subclasses of <code><a href="cgi.html#handler">cgi.Handler</a></code><br />
 <code><strong>max_requests</strong></code>: integer<br />
-<code><strong>params</strong></code>: map from strings to strings</p>
+<code><strong>params</strong></code>: map from strings to strings<br />
+<code><strong>request_type</strong></code>: subclass of <code><a href="#request">Request</a></code></p>
 <p>Create new <code>Server</code> instance. Instances of the appropriate type
 as indicated by <code>handler_types</code> are created to handle the requests.
 The valid keys for the <code>handler_types</code> map are
@@ -84,6 +85,11 @@ switch between using FastCGI and ordinary CGI simply by changing your web
 server configuration, with no changes required to your code.</p>
 <p>Example:</p>
 <p class="code"><code>fcgi.Server({fcgi.FCGI_RESPONDER: Handler}).run()</code></p>
+
+<h2><a name="request" id="request"></a>class: Request(<a href="cgi.html#request">cgi.Request</a>)</a></h2>
+<p><code>Request</code> is a subclass of
+<code>cgi.<a href="cgi.html#request">Request</a></code> that provides the same
+public interface but uses the FastCGI protocol behinid the scenes.</p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
