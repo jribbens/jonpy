@@ -114,13 +114,13 @@ charset=iso-8859-1</code>. If this is not appropriate then the content type
 should be overridden by specifying a new one with the
 <code><a href="#request:set_header">set_header</a></code> method.</p>
 
-<h4><a name="request:output_headers" id="request:output_headers"><code><strong>output_headers()</strong></code></a></h4>
+<h4><a name="request:output_headers" id="request:output_headers"><code><strong>output_headers(self)</strong></code></a></h4>
 <p>Output the accumulated array of HTTP headers. If the headers have already
 been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
 raised.</p>
 
-<h4><a name="request:clear_headers" id="request:clear_headers"><code><strong>clear_headers()</strong></code></a></h4>
+<h4><a name="request:clear_headers" id="request:clear_headers"><code><strong>clear_headers(self)</strong></code></a></h4>
 <p>Clear the accumulated array of HTTP headers. If the headers have already
 been output then a
 <code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception
