@@ -9,8 +9,15 @@ class MultiForm(wt.TemplateCode):
   name = "standard"
   stages = 0
   filename = "mf%d.html"
+  keys = ()
   
   def init(self):
+    pass
+
+  def update(self):
+    pass
+
+  def check(self):
     pass
 
   def _get_name(self):
@@ -56,11 +63,15 @@ class MultiForm(wt.TemplateCode):
     # values. Update stage objects with container values.
 
     self.stage_objs = []
-    for i in range(self.stages):
-      self.stage_objs.append(getattr(self, "stage%d" % i)(self))
-      self.stage_objs[i].container = self.container
-      self.stage_objs[i].errors = []
-      for key in self.stage_objs[i].keys:
+    for i in range(-1, self.stages):
+      if i >= 0:
+        self.stage_objs.append(getattr(self, "stage%d" % i)(self))
+        self.stage_objs[i].container = self.container
+        self.stage_objs[i].errors = []
+        stage_obj = self.stage_objs[i]
+      else:
+        stage_obj = self
+      for key in stage_obj.keys:
         if key.endswith("!*"):
           ckey = key[:-2]
         elif key.endswith("!") or key.endswith("*"):
@@ -75,16 +86,18 @@ class MultiForm(wt.TemplateCode):
           else:
             value = self.req.params[key]
           if value is not None:
-            if hasattr(self.stage_objs[i], "update_%s" % ckey):
-              getattr(self.stage_objs[i], "update_%s" % ckey)(value)
+            if hasattr(stage_obj, "update_%s" % ckey):
+              getattr(stage_obj, "update_%s" % ckey)(value)
             else:
               self.container[ckey] = value
-        if not hasattr(self.stage_objs[i], ckey):
-          setattr(self.stage_objs[i], ckey, self.container.get(ckey, ""))
+        if not hasattr(stage_obj, ckey):
+          setattr(stage_obj, ckey, self.container.get(ckey, ""))
 
     # Check for errors and adjust stage as necessary.
 
     self.errors = []
+    self.update()
+    self.check()
     for i in range(self.stage):
       self.stage_objs[i].update()
       self.stage_objs[i].check()
