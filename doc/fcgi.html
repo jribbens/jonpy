@@ -14,7 +14,8 @@ protocol by using this module. The module implements the entire
 <a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html">FastCGI
 specification</a> version 1.0, including multiple simultaneous connections per
 process and multiple simultaneous requests per connection. Requests are
-executed using Python's threading facilities.</p>
+executed using Python's threading facilities, although it can be configured to
+run without using threading.</p>
 <h2>Usage</h2>
 <p>See the documentation for the <code><a href="cgi.html">cgi</a></code>
 module for information on how to use the CGI abstraction layer. The only
@@ -40,12 +41,13 @@ instances of <code><a href="cgi.html#handler">cgi.Handler</a></code> subclasses
 to handle the requests.</p>
 
 <h3>Public Methods</h3>
-<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None, request_type=Request)</strong></code></a></h4>
+<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None, request_type=Request, threading_level=2)</strong></code></a></h4>
 <p><code><strong>handler_types</strong></code>: map from FastCGI request types
 to subclasses of <code><a href="cgi.html#handler">cgi.Handler</a></code><br />
 <code><strong>max_requests</strong></code>: integer<br />
 <code><strong>params</strong></code>: map from strings to strings<br />
-<code><strong>request_type</strong></code>: subclass of <code><a href="#request">Request</a></code></p>
+<code><strong>request_type</strong></code>: subclass of <code><a href="#request">Request</a></code><br />
+<code><strong>threading_level</strong></code>: integer</p>
 <p>Create new <code>Server</code> instance. Instances of the appropriate type
 as indicated by <code>handler_types</code> are created to handle the requests.
 The valid keys for the <code>handler_types</code> map are
@@ -63,9 +65,40 @@ may still be in progress in other threads.</p>
 <code><a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html#S4.1">FCGI_GET_VALUES</a></code>
 request by using the optional <code>params</code> parameter, which is a map
 from requested variable names to their value. The following default values are
-used unless explicitly specified:
-<code style="white-space: normal">{"FCGI_MAX_CONNS":&nbsp;"10",
-"FCGI_MAX_REQS":&nbsp;"10", "FXGI_MPXS_CONNS":&nbsp;"1"}</code>.</p>
+used unless explicitly specified:</p>
+<table>
+<tr><th><code>threading_level</code></th><th><code>FCGI_MAX_CONNS</code></th><th><code>FCGI_MAX_REQS</code></th><th><code>FCGI_MPXS_CONNS</code></th></tr>
+<tr><th><code>0</code></th><td><code>1</code></td><td><code>1</code></td><td><code>0</code></td></tr>
+<tr><th><code>1</code></th><td><code>10</code></td><td><code>10</code></td><td><code>0</code></td></tr>
+<tr><th><code>2</code></th><td><code>10</code></td><td><code>10</code></td><td><code>1</code></td></tr>
+</table>
+<p>You can alter the class used to provide request information using
+<code>request_type</code>. The class provided must always be a subclass of
+<code>fcgi.<a href="#request">Request</a></code>.</p>
+<p>By default, <code>fcgi</code> uses threading extensively. It creates one
+thread per connection, and one thread per request. However, on some platforms
+threading is either not available, or the operating system support for it is
+buggy. You can alter the use of threading with the <code>threading_level</code>
+parameter. The valid <code>threading_level</code> values are:</p>
+<table>
+<tr><th><code>threading_level</code></th><th>Meaning</th></tr>
+<tr><th><code>0</code></th><td>Threading is not used at all.<br />
+Only one connection can be handled at once, and multiple requests cannot be
+multiplexed onto that connection, so only one request can be handled at
+once.</td></tr>
+<tr><th><code>1</code></th><td>One thread is created per connection.<br />
+Multiple connections can be handled simultaneously, but multiple requests
+cannot be multiplexed onto a connection.</td></tr>
+<tr><th><code>2</code></th><td>One thread is created per connection, and one thread is created per request.<br />
+Multiple connections can be handled simultaneously, and multiple requests
+can be multiplexed onto a connection.</td></tr>
+</table>
+<p>If threading is requested (i.e. a <code>threading_level</code> greater than
+zero is specified, or <code>threading_level</code> is left unspecified), but
+the Python <code>thread</code> module cannot be imported (i.e. threading support
+is not available) then <code>fcgi</code> will automatically downgrade to
+<code>threading_level = 0</code>.</p>
+
 
 <h4><a name="server:exit" id="server:exit"><code><strong>exit(self):</strong></code></a></h4>
 <p>This method will cause the
@@ -86,7 +119,7 @@ server configuration, with no changes required to your code.</p>
 <p>Example:</p>
 <p class="code"><code>fcgi.Server({fcgi.FCGI_RESPONDER: Handler}).run()</code></p>
 
-<h2><a name="request" id="request"></a>class: Request(<a href="cgi.html#request">cgi.Request</a>)</a></h2>
+<h2><a name="request" id="request"></a>class: Request(<a href="cgi.html#request">cgi.Request</a>)</h2>
 <p><code>Request</code> is a subclass of
 <code>cgi.<a href="cgi.html#request">Request</a></code> that provides the same
 public interface but uses the FastCGI protocol behinid the scenes.</p>

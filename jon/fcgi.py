@@ -1,6 +1,6 @@
 # $Id$
 
-import cgi, fakefile, struct, socket, sys, threading, errno, os, select
+import cgi, fakefile, struct, socket, sys, errno, os, select
 
 log_level = 0
 
@@ -103,50 +103,50 @@ class NameValueData:
 
 
 class InputStream(fakefile.FakeInput):
-  def __init__(self):
+  def __init__(self, connection, streamname, threaded):
     fakefile.FakeInput.__init__(self)
     self.data = []
     self.eof = 0
-    self.pos = 0
-    self.sema = threading.Semaphore(0)
+    self.connection = connection
+    self.streamname = streamname
+    self.threaded = threaded
+    if self.threaded:
+      import threading
+      self.sema = threading.Semaphore(0)
 
   def add_data(self, s):
     if s:
       self.data.append(s)
     else:
       self.eof = 1
-    self.sema.release()
-  
+    if self.threaded:
+      self.sema.release()
+
   def _read(self, nbytes=-1):
-    ret = ""
-    while nbytes != 0:
-      while not self.eof and not self.data:
+    while not self.eof and not self.data:
+      if self.threaded:
         self.sema.acquire()
-      if self.eof and not self.data:
-        break
-      if nbytes < 0:
-        ret += self.data.pop(0)
-        continue
-      s = self.data[0][self.pos:self.pos+nbytes]
-      self.pos += nbytes
-      ret += s
-      nbytes -= len(s)
-      if self.pos >= len(self.data[0]):
-        self.data.pop(0)
-        self.pos = 0
-    return ret
+      else:
+        self.connection.process_input(self.streamname)
+    if self.eof and not self.data:
+      return ""
+    return self.data.pop(0)
 
 
-class Connection(threading.Thread):
-  def __init__(self, socket, handler_types, request_type, params=None,
-    *t_args, **t_kwargs):
-    threading.Thread.__init__(self, *t_args, **t_kwargs)
+class Connection:
+  def __init__(self, socket, handler_types, request_type, params,
+    threading_level):
     self.socket = socket
-    self.socketlock = threading.Lock()
     self.handler_types = handler_types
     self.request_type = request_type
     self.fileno = self.socket.fileno()
     self.params = params
+    self.threading_level = threading_level
+    if self.threading_level > 1:
+      import thread
+      self.socketlock = thread.allocate_lock()
+    else:
+      self.socketlock = None
 
   def log(self, level, request_id, message):
     if log_level >= level:
@@ -156,22 +156,38 @@ class Connection(threading.Thread):
         log_file.write("%3d     %s\n" % (self.fileno, message))
 
   def close(self):
-    self.socketlock.acquire()
-    try:
+    if self.socketlock is not None:
+      self.socketlock.acquire()
+      try:
+        self.socket.close()
+      finally:
+        self.socketlock.release()
+    else:
       self.socket.close()
-    finally:
-      self.socketlock.release()
 
   def write(self, rec):
-    self.socketlock.acquire()
     try:
-      self.socket.sendall(rec.encode())
-    finally:
-      self.socketlock.release()
+      if self.socketlock is not None:
+        self.socketlock.acquire()
+        try:
+          self.socket.sendall(rec.encode())
+        finally:
+          self.socketlock.release()
+      else:
+        self.socket.sendall(rec.encode())
+    except socket.error, x:
+      if x[0] == errno.EPIPE:
+        for req in self.requests.values():
+          req.aborted = 2
+      else:
+        raise
 
   def run(self):
     self.log(2, 0, "New connection running")
     self.requests = {}
+    self.process_input(None)
+
+  def process_input(self, waitstream):
     while 1:
       try:
         # this select *should* be pointless, however it works around a bug
@@ -201,11 +217,20 @@ class Connection(threading.Thread):
           if self.params and nameval[0] in self.params:
             reply_data.values.append(nameval[0], str(self.params[nameval[0]]))
           elif nameval[0] == "FCGI_MAX_CONNS":
-            reply_data.values.append(("FCGI_MAX_CONNS", "10"))
+            if self.threading_level < 1:
+              reply_data.values.append(("FCGI_MAX_CONNS", "1"))
+            else:
+              reply_data.values.append(("FCGI_MAX_CONNS", "10"))
           elif nameval[0] == "FCGI_MAX_REQS":
-            reply_data.values.append(("FCGI_MAX_REQS", "10"))
+            if self.threading_level < 1:
+              reply_data.values.append(("FCGI_MAX_REQS", "1"))
+            else:
+              reply_data.values.append(("FCGI_MAX_REQS", "10"))
           elif nameval[0] == "FCGI_MPXS_CONNS":
-            reply_data.values.append(("FCGI_MPXS_CONNS", "1"))
+            if self.threading_level < 2:
+              reply_data.values.append(("FCGI_MPXS_CONNS", "0"))
+            else:
+              reply_data.values.append(("FCGI_MPXS_CONNS", "1"))
         reply.content_data = reply_data.encode()
         self.write(reply)
       elif rec.type == FCGI_BEGIN_REQUEST:
@@ -221,8 +246,17 @@ class Connection(threading.Thread):
           reply.content_data = struct.pack("!IBBBB",
             0, FCGI_UNKNOWN_ROLE, 0, 0, 0)
           self.write(reply)
+        elif self.threading_level < 2 and self.requests:
+          self.log(2, rec.request_id, "no handler for this role, rejecting")
+          reply = Record()
+          reply.type = FCGI_END_REQUEST
+          reply.request_id = rec.request_id
+          reply.content_data = struct.pack("!IBBBB",
+            0, FCGI_CANT_MPX_CONN, 0, 0, 0)
+          self.write(reply)
         else:
-          req = self.request_type(handler_type, self, rec.request_id, flags)
+          req = self.request_type(handler_type, self, rec.request_id, flags,
+            self.threading_level)
           self.requests[rec.request_id] = req
       elif rec.type == FCGI_PARAMS:
         req = self.requests.get(rec.request_id)
@@ -233,8 +267,13 @@ class Connection(threading.Thread):
             for nameval in data.values:
               req.environ[nameval[0]] = nameval[1]
           else:
-            self.log(2, rec.request_id, "starting request thread")
-            req.start()
+            if self.threading_level > 1:
+              self.log(2, rec.request_id, "starting request thread")
+              import thread
+              thread.start_new_thread(req.run, ())
+            else:
+              self.log(2, rec.request_id, "executing request")
+              req.run()
         else:
           self.log(2, rec.request_id, "unknown request_id (FCGI_PARAMS)")
       elif rec.type == FCGI_ABORT_REQUEST:
@@ -250,6 +289,8 @@ class Connection(threading.Thread):
           if log_level >= 4:
             self.log(4, rec.request_id, "FCGI_STDIN: %s" % `rec.content_data`)
           req.stdin.add_data(rec.content_data)
+          if waitstream == "stdin":
+            return
         else:
           self.log(2, rec.request_id, "unknown request_id (FCGI_STDIN)")
       elif rec.type == FCGI_DATA:
@@ -258,6 +299,8 @@ class Connection(threading.Thread):
           if log_level >= 4:
             self.log(4, rec.request_id, "FCGI_DATA: %s" % `rec.content_data`)
           req.fcgi_data.add_data(rec.content_data)
+          if waitstream == "fcgi_data":
+            return
         else:
           self.log(2, rec.request_id, "unknown request_id (FCGI_DATA)")
       else:
@@ -269,16 +312,16 @@ class Connection(threading.Thread):
         self.write(reply)
       
 
-class Request(cgi.Request, threading.Thread):
+class Request(cgi.Request):
   def __init__(self, handler_type, connection, request_id, flags,
-    *args, **kwargs):
+    threading_level):
     cgi.Request.__init__(self, handler_type)
-    threading.Thread.__init__(self, *args, **kwargs)
     self.__connection = connection
     self.__request_id = request_id
     self.__flags = flags
-    self.fcgi_data = InputStream()
-    self.stdin = InputStream()
+    self.__threading_level = threading_level
+    self.fcgi_data = InputStream(connection, "fcgi_data", threading_level > 1)
+    self.stdin = InputStream(connection, "stdin", threading_level > 1)
     self.environ = {}
     self._stderr_used = 0
     cgi.Request._init(self)
@@ -289,47 +332,49 @@ class Request(cgi.Request, threading.Thread):
         self.__request_id, message))
 
   def run(self):
-    self.log(2, "New request running")
-    self.log(2, "Calling handler")
     try:
-      handler = self._handler_type()
-    except:
-      self.traceback()
-    else:
+      self.log(2, "New request running")
+      self.log(2, "Calling handler")
       try:
-        handler.process(self)
+        handler = self._handler_type()
       except:
-        handler.traceback(self)
-    self.log(2, "Handler finished")
-    self.flush()
-    if self.aborted < 2:
-      try:
-        rec = Record()
-        rec.type = FCGI_STDOUT
-        rec.request_id = self.__request_id
-        rec.content_data = ""
-        self.__connection.write(rec)
-        self.log(2, "Closed FCGI_STDOUT")
-        if self._stderr_used:
-          rec.type = FCGI_STDERR
+        self.traceback()
+      else:
+        try:
+          handler.process(self)
+        except:
+          handler.traceback(self)
+      self.log(2, "Handler finished")
+      self.flush()
+      if self.aborted < 2:
+        try:
+          rec = Record()
+          rec.type = FCGI_STDOUT
+          rec.request_id = self.__request_id
+          rec.content_data = ""
           self.__connection.write(rec)
-          self.log(2, "Closed FCGI_STDERR")
-        rec.type = FCGI_END_REQUEST
-        rec.request_id = self.__request_id
-        rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE,
-          0, 0, 0)
-        self.__connection.write(rec)
-        self.log(2, "Sent FCGI_END_REQUEST")
-      except IOError, x:
-        if x[0] == errno.EPIPE:
-          self.log(2, "EPIPE during request finalisation")
-        else:
-          raise
-    if not self.__flags & FCGI_KEEP_CONN:
-      self.__connection.close()
-      self.log(2, "Closed connection")
-    del self.__connection.requests[self.__request_id]
-    self.log(2, "Request complete")
+          self.log(2, "Closed FCGI_STDOUT")
+          if self._stderr_used:
+            rec.type = FCGI_STDERR
+            self.__connection.write(rec)
+            self.log(2, "Closed FCGI_STDERR")
+          rec.type = FCGI_END_REQUEST
+          rec.request_id = self.__request_id
+          rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE,
+            0, 0, 0)
+          self.__connection.write(rec)
+          self.log(2, "Sent FCGI_END_REQUEST")
+        except IOError, x:
+          if x[0] == errno.EPIPE:
+            self.log(2, "EPIPE during request finalisation")
+          else:
+            raise
+    finally:
+      if not self.__flags & FCGI_KEEP_CONN:
+        self.__connection.close()
+        self.log(2, "Closed connection")
+      del self.__connection.requests[self.__request_id]
+      self.log(2, "Request complete")
 
   def _write(self, s):
     if log_level >= 4:
@@ -372,11 +417,19 @@ class Request(cgi.Request, threading.Thread):
 
 class Server:
   def __init__(self, handler_types, max_requests=0, params=None,
-    request_type=Request):
+    request_type=Request, threading_level=2):
     self.handler_types = handler_types
     self.max_requests = max_requests
     self.params = params
     self.request_type = request_type
+    self.log(2, "theading_level = %d" % threading_level)
+    if threading_level > 0:
+      try:
+        import thread
+      except ImportError, x:
+        threading_level = 0
+        self.log(2, "cannot import thread (%s), disabling threading" % str(x))
+    self.threading_level = threading_level
 
   def log(self, level, message):
     if log_level >= level:
@@ -423,9 +476,14 @@ class Server:
         self.log(1, "not in web_server_addrs - rejected")
         newsock.close()
         continue
-      Connection(newsock, self.handler_types, self.request_type,
-        params=self.params).start()
+      conn = Connection(newsock, self.handler_types, self.request_type,
+        self.params, self.threading_level)
       del newsock
+      if self.threading_level > 0:
+        import thread
+        thread.start_new_thread(conn.run, ())
+      else:
+        conn.run()
       if self.max_requests > 0:
         self.max_requests -= 1
         if self.max_requests <= 0:
