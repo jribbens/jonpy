@@ -134,7 +134,6 @@ class Handler(cgi.Handler):
     if sp[1] == "":
       sp = os.path.split(sp[0])
     self.etc = sp[0] + "/etc"
-    namespace = { "wt": sys.modules["jon.wt"] }
     codefname = req.environ["PATH_TRANSLATED"]
     if self.buffer_code:
       try:
@@ -148,6 +147,11 @@ class Handler(cgi.Handler):
           self._code_cache[codefname] = namespace
         except AttributeError:
           self._code_cache = { codefname: namespace }
+    else:
+      namespace = { "wt": sys.modules["jon.wt"] }
+      code = compile(open(codefname).read(), codefname, "exec")
+      exec code in namespace
+      del code
     obj = namespace["main"](None, self)
     if obj.template_as_file:
       obj.main(open(self.template))
