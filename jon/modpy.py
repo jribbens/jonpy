@@ -23,7 +23,7 @@ class Request(cgi.Request):
     self._build_environ()
     self._redirected = 0
     self.stdin = InputStream(modpy_req)
-    cgi.Request._init(self)
+    super(Request, self)._init()
 
   def _build_environ(self):
     modpy_req = self._modpy_req
@@ -56,32 +56,44 @@ class Request(cgi.Request):
     if self._doneHeaders:
       raise cgi.SequencingError, \
         "cannot add_header(%s) after output_headers()" % `hdr`
-    if hdr == "Content-Type":
+    if hdr.lower() == "Content-Type":
       self._modpy_req.content_type = val
     else:
       self._modpy_req.headers_out.add(hdr, val)
-    if hdr == "Location":
+    if hdr.lower() == "Location":
       self._redirected = 1
 
   def set_header(self, hdr, val):
     if self._doneHeaders:
       raise cgi.SequencingError, \
         "cannot set_header(%s) after output_headers()" % `hdr`
-    if hdr == "Content-Type":
+    if hdr.lower() == "content-type":
       self._modpy_req.content_type = val
     else:
       self._modpy_req.headers_out[hdr] = val
-    if hdr == "Location":
+    if hdr.lower() == "location":
       self._redirected = 1
+
+  def get_header(self, hdr, index=0):
+    val = self._modpy_req.headers_out.get(hdr)
+    if val is None:
+      return val
+    if isinstance(val, str):
+      if index == 0:
+        return val
+      return None
+    if len(val) > index:
+      return val[index]
+    return None
 
   def del_header(self, hdr, val):
     if self._doneHeaders:
       raise cgi.SequencingError, \
         "cannot del_header(%s) after output_headers()" % `hdr`
-    if hdr == "Content-Type":
+    if hdr.lower() == "Content-Type":
       raise Error, "cannot del_header(\"Content-Type\")"
     del self._modpy_req.headers_out[hdr]
-    if hdr == "Location":
+    if hdr.lower() == "Location":
       self._redirected = 0
 
   def process(self, modpy_req):
@@ -105,5 +117,6 @@ class Request(cgi.Request):
     if not self.aborted:
       self._modpy_req.write(s)
 
-  def _flush(self):
-    pass
+
+class GZipRequest(cgi.GZipMixIn, Request):
+  pass

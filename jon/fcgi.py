@@ -313,6 +313,8 @@ class Connection:
       
 
 class Request(cgi.Request):
+  _fcgi_fallback_type = cgi.CGIRequest
+
   def __init__(self, handler_type, connection, request_id, flags,
     threading_level):
     cgi.Request.__init__(self, handler_type)
@@ -333,7 +335,7 @@ class Request(cgi.Request):
   def run(self):
     try:
       self.log(2, "New request running")
-      cgi.Request._init(self)
+      self._init()
       self.log(2, "Calling handler")
       try:
         handler = self._handler_type()
@@ -411,8 +413,9 @@ class Request(cgi.Request):
           else:
             raise
 
-  def _flush(self):
-    pass
+
+class GZipRequest(cgi.GZipMixIn, Request):
+  _fcgi_fallback_type = cgi.GZipCGIRequest
 
 
 class Server:
@@ -454,7 +457,8 @@ class Server:
         raise
       if x[0] == errno.ENOTSOCK:
         self.log(1, "stdin not socket - falling back to CGI")
-        cgi.CGIRequest(self.handler_types[FCGI_RESPONDER]).process()
+        self.request_type._fcgi_fallback_type(
+          self.handler_types[FCGI_RESPONDER]).process()
         return
     self._sock.setblocking(1)
     while 1:
