@@ -164,7 +164,7 @@ class Handler(cgi.Handler):
       namespace = _code_cache[codefname]
     except KeyError:
       namespace = { "wt": sys.modules[__name__] }
-      code = compile(open(codefname, "rb").read(), codefname, "exec")
+      code = compile(open(codefname, "r").read(), codefname, "exec")
       exec code in namespace
       del code
       if self.cache_code:
