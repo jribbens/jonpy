@@ -10,5 +10,5 @@ setup(name="jonpy",
       author="Jon Ribbens",
       author_email="jon+jonpy@unequivocal.co.uk",
       url="http://jonpy.sourceforge.net/",
-      packages=['jon']
+      packages=['jon', 'jon.wt']
 )
