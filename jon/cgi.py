@@ -261,7 +261,7 @@ class Request:
     for line in lines:
       self.write(html_encode(line))
       self.error(line)
-    self.write("</body></html>\n")
+    self.write("</pre></body></html>\n")
 
 
 class CGIRequest(Request):
