@@ -1,6 +1,6 @@
 # $Id$
 
-import cgi, struct, socket, sys, threading, errno, os, select, errno
+import cgi, struct, socket, sys, threading, errno, os, select
 
 log_level = 0
 
