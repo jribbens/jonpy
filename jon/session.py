@@ -12,13 +12,13 @@ class Error(Exception):
 
 
 class Session(dict):
-  def make_hash(self, sid, secret):
+  def _make_hash(self, sid, secret):
     """Create a hash for 'sid'
     
     This function may be overridden by subclasses."""
     return hmac.new(secret, sid, sha).hexdigest()[:8]
 
-  def create(self, secret):
+  def _create(self, secret):
     """Create a new session ID and, optionally hash
     
     This function must insert the new session ID (which must be 8 hexadecimal
@@ -30,10 +30,10 @@ class Session(dict):
     This function may be overridden by subclasses.
     """
     rnd = str(time.time()) + str(random.random()) + \
-      str(self.req.environ.get("UNIQUE_ID"))
+      str(self._req.environ.get("UNIQUE_ID"))
     self["id"] = sha.new(rnd).hexdigest()[:8]
 
-  def load(self):
+  def _load(self):
     """Load the session dictionary from somewhere
     
     This function may be overridden by subclasses.
@@ -54,29 +54,29 @@ class Session(dict):
   def __init__(self, req, secret, cookie="jonsid", url=0, root=""):
     dict.__init__(self)
     self["id"] = None
-    self.req = req
+    self._req = req
     self.relocated = 0
     self.new = 0
 
-    if self.req.cookies.has_key(cookie):
-      self["id"] = req.cookies[cookie].value[:8]
-      self["hash"] = req.cookies[cookie].value[8:]
-      if self["hash"] != self.make_hash(self["id"], secret):
+    if cookie and self._req.cookies.has_key(cookie):
+      self["id"] = self._req.cookies[cookie].value[:8]
+      self["hash"] = self._req.cookies[cookie].value[8:]
+      if self["hash"] != self._make_hash(self["id"], secret):
         self["id"] = None
 
     if url:
       for i in xrange(1, 4):
-        requrl = self.req.environ.get("REDIRECT_" * i + "SESSION")
+        requrl = self._req.environ.get("REDIRECT_" * i + "SESSION")
         if requrl:
           break
       if requrl and self["id"] is None:
         self["id"] = requrl[:8]
         self["hash"] = requrl[8:]
-        if self["hash"] != self.make_hash(self["id"], secret):
+        if self["hash"] != self._make_hash(self["id"], secret):
           self["id"] = None
 
     if self["id"] is not None:
-      if not self.load():
+      if not self._load():
         self["id"] = None
 
     if self["id"] is None:
@@ -84,19 +84,20 @@ class Session(dict):
         del self["hash"]
       self.created = time.time()
       self.new = 1
-      self.create(secret)
+      self._create(secret)
       if not self.has_key("hash"):
-        self["hash"] = self.make_hash(self["id"], secret)
-      c = Cookie.SimpleCookie()
-      c[cookie] = self["id"] + self["hash"]
-      self.req.add_header("Set-Cookie", c[cookie].OutputString())
+        self["hash"] = self._make_hash(self["id"], secret)
+      if cookie:
+        c = Cookie.SimpleCookie()
+        c[cookie] = self["id"] + self["hash"]
+        self._req.add_header("Set-Cookie", c[cookie].OutputString())
 
     if url:
       if not requrl or self["id"] != requrl[:8] or self["hash"] != requrl[8:]:
-        requrl = self.req.environ["REQUEST_URI"][len(root):]
+        requrl = self._req.environ["REQUEST_URI"][len(root):]
         requrl = re.sub("^/[A-Fa-f0-9]{16}/", "/", requrl)
-        self.req.add_header("Location", "http://" + 
-          self.req.environ["SERVER_NAME"] + root + "/" + self["id"] +
+        self._req.add_header("Location", "http://" + 
+          self._req.environ["SERVER_NAME"] + root + "/" + self["id"] +
           self["hash"] + requrl)
         self.relocated = 1
       self.surl = root + "/" + self["id"] + self["hash"] + "/"
@@ -105,16 +106,16 @@ class Session(dict):
 class MemorySession(Session):
   _sessions = {}
 
-  def create(self, secret):
+  def _create(self, secret):
     while 1:
-      Session.create(self, secret)
+      Session._create(self, secret)
       if self["id"] in self._sessions:
         continue
       self._sessions[self["id"]] = {"created": self.created,
         "updated": self.created, "data": {}}
       break
   
-  def load(self):
+  def _load(self):
     try:
       sess = self._sessions[self["id"]]
     except KeyError:
@@ -138,9 +139,9 @@ class MemorySession(Session):
 
 
 class FileSession(Session):
-  def create(self, secret):
+  def _create(self, secret):
     while 1:
-      Session.create(self, secret)
+      Session._create(self, secret)
       try:
         os.lstat("%s/%s" % (self.basedir, self["id"][:2]))
       except OSError, x:
@@ -159,7 +160,7 @@ class FileSession(Session):
       f.flush()
       break
 
-  def load(self):
+  def _load(self):
     try:
       f = open("%s/%s/%s" % (self.basedir, self["id"][:2], self["id"][2:]),
         "r+")
@@ -217,21 +218,21 @@ class FileSession(Session):
 
 
 class SQLSession(Session):
-  def create(self, secret):
+  def _create(self, secret):
     self.dbc.execute("LOCK TABLES %s WRITE" % (self.table,))
     while 1:
-      Session.create(self, secret)
+      Session._create(self, secret)
       self.dbc.execute("SELECT 1 FROM %s WHERE ID=%%s" % (self.table,),
         (long(self["id"], 16),))
       if self.dbc.rowcount == 0:
         break
-    self["hash"] = self.make_hash(self["id"], secret)
+    self["hash"] = self._make_hash(self["id"], secret)
     self.dbc.execute("INSERT INTO %s (ID,hash,created,updated) VALUES " \
       "(%%s,%%s,%%s,%%s)" % (self.table,),
       (long(self["id"], 16), self["hash"], self.created, self.created))
     self.dbc.execute("UNLOCK TABLES")
 
-  def load(self):
+  def _load(self):
     self.dbc.execute("SELECT created,data FROM %s WHERE ID=%%s" % (self.table,),
       (long(self["id"], 16),))
     if self.dbc.rowcount == 0:
