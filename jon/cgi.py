@@ -217,7 +217,7 @@ class Request:
       else:
         self.params[name] = entity.body
 
-  def read_cgi_data(self, environ, inf):
+  def _read_cgi_data(self, environ, inf):
     """Read input data from the client and set up the object attributes."""
     if environ.has_key("QUERY_STRING"):
       self._mergevars(environ["QUERY_STRING"])
@@ -264,7 +264,7 @@ class CGIRequest(Request):
 
   def process(self):
     """Read the CGI input and create and run a handler to handle the request."""
-    self.read_cgi_data(self.environ, sys.stdin)
+    self._read_cgi_data(self.environ, sys.stdin)
     try:
       self._handler_type().process(self)
     except:

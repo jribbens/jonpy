@@ -314,7 +314,7 @@ class Request(cgi.Request, threading.Thread):
 
   def run(self):
     self.log(2, "New request running")
-    self.read_cgi_data(self.environ, self.fcgi_stdin)
+    self._read_cgi_data(self.environ, self.fcgi_stdin)
     self.log(3, "Read CGI data: %s" % `self.params`)
     self.log(2, "Calling handler")
     self._handler_type().process(self)
