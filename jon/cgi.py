@@ -191,7 +191,7 @@ class Request:
     If the variable name ends with a '*' character, then the value that is
     placed in the dictionary will be a list. This is useful for multiple-value
     fields. If the variable name ends with a '!' character (before the '*' if
-    present) then the value will be a jmime.Entity object."""
+    present) then the value will be a mime.Entity object."""
     import mime
     headers = "Content-Type: %s\n" % os.environ["CONTENT_TYPE"]
     body = encoded.read()
