@@ -220,6 +220,16 @@ associated with a web site that should not be under the
 <p>The full pathname of the template file.</p>
 
 <h3>Public Methods</h3>
+<h4><a name="handler:get_template_encoding" id="handler:get_template_encoding"><code><strong>get_template_encoding(self)</strong></code></a></h4>
+<p>This method may be overridden by subclasses. It returns the character
+encoding used for the template file, or <code>None</code> if no encoding
+conversion is to be done. If it is not <code>None</code> then the template
+file will be assumed to be using the specified character encoding and the
+<code>template</code> parameter to
+<code>TemplateCode.<a href="#templatecode:main">main</a></code> will be
+a <code>unicode</code> string instead of a normal string. The default
+implementation returns <code>None</code>.</p>
+
 <h4><a name="handler:pre_request" id="handler:pre_request"><code><strong>pre_request(self, obj)</strong></code></a></h4>
 <p><code><strong>obj</strong></code>:
 <code>wt.<a href="#templatecode">TemplateCode</a></code> instance</p>

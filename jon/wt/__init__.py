@@ -75,7 +75,12 @@ class GlobalTemplate(TemplateCode):
       if self.template_as_file:
         self.process(open(self.template_name(), "rb"))
       else:
-        self.process(open(self.template_name(), "rb").read())
+        encoding = self.wt.get_template_encoding()
+        if encoding is None:
+          self.process(open(self.template_name(), "rb").read())
+        else:
+          self.process(unicode(open(self.template_name(), "rb").read(),
+            encoding))
 
   def template_name(self):
     return self.wt.etc + "/template.html"
@@ -149,6 +154,9 @@ class Handler(cgi.Handler):
       code = self.req.environ["SCRIPT_FILENAME"]
     return code
 
+  def get_template_encoding(self):
+    return None
+
   def pre_request(self, obj):
     pass
 
@@ -174,7 +182,11 @@ class Handler(cgi.Handler):
     if obj.template_as_file:
       obj.main(open(self.template, "rb"))
     else:
-      obj.main(open(self.template, "rb").read())
+      encoding = self.get_template_encoding()
+      if encoding is None:
+        obj.main(open(self.template, "rb").read())
+      else:
+        obj.main(unicode(open(self.template, "rb").read(), encoding))
     self.post_request(obj)
 
 

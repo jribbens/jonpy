@@ -38,13 +38,13 @@ def html_encode(raw):
   Specifically, the following characters are encoded as entities:
     & < > " ' +
   """
-  if not isinstance(raw, unicode):
+  if not isinstance(raw, (str, unicode)):
     raw = str(raw)
   return re.sub(_html_encre, lambda m: _html_encodes[m.group(0)], raw)
 
 def url_encode(raw):
   """Return the string parameter URL-encoded."""
-  if not isinstance(raw, unicode):
+  if not isinstance(raw, (str, unicode)):
     raw = str(raw)
   return re.sub(_url_encre, lambda m: "%%%02X" % ord(m.group(0)), raw)
 
@@ -258,6 +258,7 @@ class Request(object):
     self._output = StringIO.StringIO()
     self._pos = 0
     self.closed = 0
+    self._encoding = self._inputencoding = None
     try:
       del self.params
     except AttributeError:
@@ -354,6 +355,14 @@ class Request(object):
       self.flush()
     self._bufferOutput = f
 
+  def set_encoding(self, encoding, inputencoding=__UNDEF__):
+    self._encoding = encoding
+    if inputencoding is not __UNDEF__:
+      self._inputencoding = inputencoding
+
+  def get_encoding(self):
+    return self._encoding
+
   def flush(self):
     """Flushes the body output."""
     self._check_open()
@@ -399,7 +408,15 @@ class Request(object):
   def write(self, s):
     """Sends some data to the client."""
     self._check_open()
-    s = str(s)
+    if self._encoding:
+      if not isinstance(s, unicode):
+        if self._inputencoding:
+          s = unicode(s, self._inputencoding)
+        else:
+          s = unicode(s)
+      s = s.encode(self._encoding)
+    else:
+      s = str(s)
     if self._bufferOutput:
       self._output.write(s)
     else:

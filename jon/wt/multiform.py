@@ -114,7 +114,11 @@ class MultiForm(wt.TemplateCode):
     if obj.template_as_file:
       obj.main(open(template, "rb"))
     else:
-      obj.main(open(template, "rb").read())
+      encoding = self.wt.get_template_encoding()
+      if encoding is None:
+        obj.main(open(template, "rb").read())
+      else:
+        obj.main(unicode(open(template, "rb").read(), encoding))
 
 
 class Stage(wt.TemplateCode):
