@@ -96,9 +96,9 @@ class MultiForm(wt.TemplateCode):
       % self.stage
     obj = self.stage_objs[self.stage]
     if obj.template_as_file:
-      obj.main(open(template))
+      obj.main(open(template, "rb"))
     else:
-      obj.main(open(template).read())
+      obj.main(open(template, "rb").read())
 
 
 class Stage(wt.TemplateCode):

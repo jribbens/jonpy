@@ -70,9 +70,9 @@ class GlobalTemplate(TemplateCode):
       self.process(self.get_template())
     else:
       if self.template_as_file:
-        self.process(open(self.template_name()))
+        self.process(open(self.template_name(), "rb"))
       else:
-        self.process(open(self.template_name()).read())
+        self.process(open(self.template_name(), "rb").read())
 
   def template_name(self):
     return self.wt.etc + "/template.html"
@@ -146,13 +146,13 @@ class Handler(cgi.Handler):
       namespace = _code_cache[codefname]
     except KeyError:
       namespace = { "wt": sys.modules[__name__] }
-      code = compile(open(codefname).read(), codefname, "exec")
+      code = compile(open(codefname, "rb").read(), codefname, "exec")
       exec code in namespace
       del code
       if self.cache_code:
         _code_cache[codefname] = namespace
     obj = namespace["main"](None, self)
     if obj.template_as_file:
-      obj.main(open(self.template))
+      obj.main(open(self.template, "rb"))
     else:
-      obj.main(open(self.template).read())
+      obj.main(open(self.template, "rb").read())

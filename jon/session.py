@@ -179,7 +179,7 @@ class FileSession(Session):
         if x[0] != errno.EEXIST:
           raise
         continue
-      f = os.fdopen(fd, "w")
+      f = os.fdopen(fd, "wb")
       f.write("%d\n" % self.created)
       pickle.dump({}, f, 1)
       f.flush()
@@ -188,7 +188,7 @@ class FileSession(Session):
   def _load(self):
     try:
       f = open("%s/%s/%s" % (self.basedir, self["id"][:2], self["id"][2:]),
-        "r+")
+        "r+b")
     except IOError, x:
       if x[0] != errno.ENOENT:
         raise
@@ -199,7 +199,7 @@ class FileSession(Session):
     return 1
 
   def save(self):
-    f = open("%s/%s/%s" % (self.basedir, self["id"][:2], self["id"][2:]), "r+")
+    f = open("%s/%s/%s" % (self.basedir, self["id"][:2], self["id"][2:]), "r+b")
     fcntl.lockf(f.fileno(), fcntl.LOCK_EX)
     f.write("%d\n" % self.created)
     pickle.dump(self.copy(), f, 1)
@@ -219,7 +219,7 @@ class FileSession(Session):
           continue
         p = "%s/%s/%s" % (basedir, d, f)
         if (max_idle and os.lstat(p).st_mtime < now - max_idle) or \
-          (max_age and int(open(p, "r").readline().strip()) < now - max_age):
+          (max_age and int(open(p, "rb").readline().strip()) < now - max_age):
           os.remove(p)
   tidy = classmethod(tidy)
 
