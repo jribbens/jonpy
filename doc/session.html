@@ -29,7 +29,10 @@ else:<br />
 is usually generated randomly. This is paired with another 8-character
 hexadecimal string which is a keyed hash generated using the identifier and a
 secret key unique to the individual web site. The hash simply makes it a bit
-more difficult for an attacker to guess a valid session identifier.</p>
+more difficult for an attacker to guess a valid session identifier. The id
+and hash are stored in the session under the keys <code>id</code> and
+<code>hash</code>, so don't try to use these keys for storing your own
+data.</p>
 <p>The session identifier and hash are passed from request to request either
 using cookies or by embedding the data at the start of the path in the URL.
 Which method to use depends on the situation - cookies are better, but some
