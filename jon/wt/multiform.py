@@ -6,34 +6,42 @@ import jon.cgi as cgi
 
 
 class MultiForm(wt.TemplateCode):
-  name = None
+  name = "standard"
   stages = 0
   filename = "mf%d.html"
   
   def init(self):
     pass
 
-  def delete(self):
+  def _getname(self):
     if self.name:
-      key = "multiform_%s" % self.name
-    else:
-      key = "multiform"
-    if self.wt.session.has_key(key):
+      return "multiform_%s" % self.name
+    return None
+
+  def delete(self):
+    key = self._getname()
+    if key is not None and self.wt.session.has_key(key):
       del self.wt.session[key]
 
   def main(self, template):
-    if self.name:
-      key = "multiform_%s" % self.name
+    key = self._getname()
+
+    # Find existing container, if it's in the session
+
+    if key is not None:
+      self.container = self.wt.session.get(key)
+      if self.container is None:
+        self.container = {}
+        self.wt.session[key] = self.container
     else:
-      key = "multiform"
-    self.container = self.wt.session.get(key)
-    if self.container is None:
       self.container = {}
-      self.wt.session[key] = self.container
-    if self.name:
-      self.stage = self.req.params.get("multiform_stage_%s" % self.name, "")
-    else:
+
+    # Determine which stage we're at. Initialise if this is a new run.
+
+    if key is None:
       self.stage = self.req.params.get("multiform_stage", "")
+    else:
+      self.stage = self.req.params.get("%s_stage" % key, "")
     try:
       self.stage = int(self.stage)
     except ValueError:
@@ -41,12 +49,15 @@ class MultiForm(wt.TemplateCode):
       self.container.clear()
       self.init()
 
-    stage_objs = []
+    # Create the stage objects. Update the container with submitted form
+    # values. Update stage objects with container values.
+
+    self.stage_objs = []
     for i in range(self.stages):
-      stage_objs.append(getattr(self, "stage%d" % i)(self))
-      stage_objs[i].container = self.container
-      stage_objs[i].errors = []
-      for key in stage_objs[i].keys:
+      self.stage_objs.append(getattr(self, "stage%d" % i)(self))
+      self.stage_objs[i].container = self.container
+      self.stage_objs[i].errors = []
+      for key in self.stage_objs[i].keys:
         if key.endswith("!*"):
           ckey = key[:-2]
         elif key.endswith("!") or key.endswith("*"):
@@ -61,25 +72,29 @@ class MultiForm(wt.TemplateCode):
           else:
             value = self.req.params[key]
           if value is not None:
-            if hasattr(stage_objs[i], "update_%s" % ckey):
-              getattr(stage_objs[i], "update_%s" % ckey)(value)
+            if hasattr(self.stage_objs[i], "update_%s" % ckey):
+              getattr(self.stage_objs[i], "update_%s" % ckey)(value)
             else:
               self.container[ckey] = value
-        if not hasattr(stage_objs[i], ckey):
-          setattr(stage_objs[i], ckey, self.container.get(ckey, ""))
+        if not hasattr(self.stage_objs[i], ckey):
+          setattr(self.stage_objs[i], ckey, self.container.get(ckey, ""))
+
+    # Check for errors and adjust stage as necessary.
 
     self.errors = []
     for i in range(self.stage):
-      stage_objs[i].update()
-      stage_objs[i].check()
-      if stage_objs[i].errors:
-        self.errors += stage_objs[i].errors
+      self.stage_objs[i].update()
+      self.stage_objs[i].check()
+      if self.stage_objs[i].errors:
+        self.errors += self.stage_objs[i].errors
         if self.stage > i:
           self.stage = i
 
+    # Display appropriate stage object.
+
     template = os.path.dirname(self.wt.template) + "/" + self.filename \
       % self.stage
-    obj = stage_objs[self.stage]
+    obj = self.stage_objs[self.stage]
     if obj.template_as_file:
       obj.main(open(template))
     else:
@@ -90,18 +105,25 @@ class Stage(wt.TemplateCode):
   keys = ()
 
   def form(self):
-    if self.outer.name:
-      name = "multiform_stage_%s" % self.outer.name
-    else:
-      name = "multiform_stage"
-    return '<input type="hidden" name="%s" value="%d">' % \
-      (cgi.html_encode(name), self.outer.stage + 1)
+    if self.outer.name is not None:
+      return '<input type="hidden" name="multiform_%s_stage" value="%d">' % \
+        (cgi.html_encode(self.outer.name), self.outer.stage + 1)
+    s = ['<input type="hidden" name="multiform_stage" value="%d">' % \
+      (self.outer.stage + 1,)]
+    for stage in range(self.outer.stages):
+      if stage == self.outer.stage:
+        continue
+      for key in self.outer.stage_objs[stage].keys:
+        if self.outer.container.has_key(key):
+          s.append('<input type="hidden" name="%s" value="%s">' % \
+            (cgi.html_encode(key), cgi.html_encode(self.outer.container[key])))
+    return "".join(s)
 
   def update(self):
     pass
 
   def check(self):
-    return None
+    pass
 
   class header(wt.TemplateCode):
     class errors(wt.TemplateCode):
