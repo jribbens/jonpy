@@ -364,7 +364,7 @@ class Request:
     else:
       if not self._doneHeaders:
         self.output_headers()
-      self._write(s)
+      self._write(str(s))
 
   def _mergevars(self, encoded):
     """Parse variable-value pairs from a URL-encoded string."""
