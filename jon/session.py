@@ -113,6 +113,7 @@ class Session(dict):
       if cookie:
         c = Cookie.SimpleCookie()
         c[cookie] = self["id"] + self["hash"]
+        c[cookie]["path"] = root + "/"
         self._req.add_header("Set-Cookie", c[cookie].OutputString())
 
     # if using url-based sessions, redirect if necessary
