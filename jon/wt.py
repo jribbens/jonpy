@@ -137,17 +137,17 @@ class Handler(cgi.Handler):
     namespace = { "wt": sys.modules["jon.wt"] }
     codefname = req.environ["PATH_TRANSLATED"]
     if self.buffer_code:
-      if hasattr(self, "_code_cache") and self._code_cache.has_key(codefname):
-        code = self._code_cache[codefname]
-      else:
+      try:
+        namespace = self._code_cache[codefname]
+      except:
+        namespace = { "wt": sys.modules["jon.wt"] }
         code = compile(open(codefname).read(), codefname, "exec")
-        if hasattr(self, "_code_cache"):
-          self._code_cache[codefname] = code
-        else:
-          self._code_cache = { codefname: code }
-    else:    
-      code = compile(open(codefname).read(), codefname, "exec")
-    exec code in namespace
+        exec code in namespace
+        del code
+        try:
+          self._code_cache[codefname] = namespace
+        except AttributeError:
+          self._code_cache = { codefname: namespace }
     obj = namespace["main"](None, self)
     if obj.template_as_file:
       obj.main(open(self.template))
