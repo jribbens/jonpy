@@ -324,7 +324,6 @@ class Request(cgi.Request):
     self.stdin = InputStream(connection, "stdin", threading_level > 1)
     self.environ = {}
     self._stderr_used = 0
-    cgi.Request._init(self)
   
   def log(self, level, message):
     if log_level >= level:
@@ -334,6 +333,7 @@ class Request(cgi.Request):
   def run(self):
     try:
       self.log(2, "New request running")
+      cgi.Request._init(self)
       self.log(2, "Calling handler")
       try:
         handler = self._handler_type()
