@@ -1,0 +1,6 @@
+# $Id$
+
+RewriteEngine on
+RewriteBase /
+RewriteCond %{DOCUMENT_ROOT}/wt/$1.py -f
+RewriteRule ^(.*)$ /wt/$1.py [E=WT_TEMPLATE_URL:/$1,E=WT_TEMPLATE_FILENAME:%{DOCUMENT_ROOT}/$1]

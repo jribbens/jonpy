@@ -1,0 +1,4 @@
+# $Id$
+
+Action wt-handler /cgi-bin/wt.py
+SetHandler wt-handler
