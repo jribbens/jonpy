@@ -355,8 +355,11 @@ class Handler:
     req.traceback()
 
 
-class DebugHandler(Handler):
-  """Handle a request. Provide exception tracebacks to the browser."""
+class DebugHandlerMixIn:
   def traceback(self, req):
     """Display a traceback, req is a Request object."""
     traceback(req, html=1)
+
+
+class DebugHandler(DebugHandlerMixIn, HandlerBase):
+  pass

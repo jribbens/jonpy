@@ -315,13 +315,17 @@ method. The default implementation calls
 <code><a href="#request:traceback">Request.traceback</a></code> to send a
 traceback to the error log and output a generic error page to the browser.</p>
 
-<h2><a name="debughandler" id="debughandler"></a>class: DebugHandler(<a href="#handler">Handler</a>)</h2>
-<p>This class is identical to <code><a href="#handler">Handler</a></code>
-except that the default implementation of
-<code><a href="#debughandler:traceback">traceback</a></code> outputs debug
-information to the browser as well as to the error log. This class may be used
-during development to aid debugging but should never be used in a production
-environment since it will leak private information to the browser.</p>
+<h2><a name="debughandlermixin" id="debughandlermixin"></a>class: DebugHandlerMixIn</h2>
+
+<p>This mix-in class provides a
+<code><a href="#handler:traceback">traceback</a></code> method that outputs
+debug information to the browser as well as to the error log. This class may be
+used during development to aid debugging but should never be used in a
+production environment since it will leak private information to the
+browser.</p>
+<p>Example:</p>
+<p class="code"><code>class Handler(cgi.DebugHandlerMixIn, wt.Handler):<br />
+&nbsp;&nbsp;pass</code></p>
 
 <h3>Public Methods</h3>
 <h4><a name="debughandler:traceback" id="debughandler:traceback"><code><strong>traceback(self, req)</strong></code></a></h4>
@@ -332,6 +336,17 @@ exception thrown by the <code><a href="#handler:process">process</a></code>
 method. The default implementation calls
 <code><a href="#traceback">traceback</a></code> to send a traceback to both the
 error log and the browser.</p>
+
+<h2><a name="debughandler" id="debughandler"></a>class: DebugHandler(<a href="#debughandlermixin">DebugHandlerMixIn</a>, <a href="#handler">Handler</a>)</h2>
+<p>For convenience, this class provides the standard
+<code><a href="#handler">Handler</a></code> class with the
+<code><a href="#debughandlermixin">DebugHandlerMixIn</a></code> class already
+mixed in.</p>
+<p>Example:</p>
+<p class="code"><code>class Handler(cgi.DebugHandler):<br />
+&nbsp;&nbsp;def process(self, req):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain")<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")</code></p>
 
 <h2>Globals</h2>
 <h3>Functions</h3>

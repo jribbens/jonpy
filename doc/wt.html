@@ -190,7 +190,7 @@ to read to fetch the template contents for this section. The default
 implementation returns
 <code>self.<a href="#wt:etc">wt.etc</a> + "/template.html"</code>.</p>
 
-<h2><a name="handler" id="handler">class</a>: Handler(<a href="cgi.html#request">cgi.Request</a>)</h2>
+<h2><a name="handler" id="handler">class</a>: Handler(<a href="cgi.html#handler">cgi.Handler</a>)</h2>
 <p>This <code>Handler</code> class should be called to process a request
 using the <code>wt</code> templating system. The default implementation uses
 various environment variables which will have been set up by the
@@ -290,6 +290,15 @@ the directory which <code>self.<a href="#handler:etc">etc</a></code> will be
 set to. <code>self.<a href="#handler:req">req</a></code> has already been set
 up. The pathname should not end with a <code>/</code> character. The default
 implementation returns the equivalent of <code>DOCUMENT_ROOT/../etc</code>.</p>
+
+<h2><a name="debughandler" id="debughandler">class</a>: DebugHandler(<a href="cgi.html#debughandlermixin">cgi.DebugHandlerMixIn</a>, <a href="#handler">Handler</a>)</h2>
+<p>This class is identical to <code><a href="#handler">Handler</a></code>,
+except that it uses
+<code>cgi.<a href="cgi.html#debughandlermixin">DebugHandlerMixIn</a></code> so
+that if an exception is thrown by a template page then a traceback will be
+sent to the browser. This class may be used during development to aid debugging
+but should never be used in a production environment since it will leak private
+information to the browser.</p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
