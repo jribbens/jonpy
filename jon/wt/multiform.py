@@ -13,18 +13,18 @@ class MultiForm(wt.TemplateCode):
   def init(self):
     pass
 
-  def _getname(self):
+  def _get_name(self):
     if self.name:
       return "multiform_%s" % self.name
     return None
 
   def delete(self):
-    key = self._getname()
+    key = self._get_name()
     if key is not None and self.wt.session.has_key(key):
       del self.wt.session[key]
 
   def main(self, template):
-    key = self._getname()
+    key = self._get_name()
 
     # Find existing container, if it's in the session
 
