@@ -276,13 +276,17 @@ class Server:
     if log_level >= level:
       log_file.write("        %s\n" % message)
 
+  def exit(self):
+    self._sock.close()
+
   def run(self):
     self.log(1, "Server.run()")
     web_server_addrs = os.environ.get("FCGI_WEB_SERVER_ADDRS", "").split(",")
     self.log(1, "web_server_addrs = %s" % `web_server_addrs`)
-    sock = socket.fromfd(sys.stdin.fileno(), socket.AF_INET, socket.SOCK_STREAM)
+    self._sock = socket.fromfd(sys.stdin.fileno(), socket.AF_INET,
+      socket.SOCK_STREAM)
     try:
-      sock.getpeername()
+      self._sock.getpeername()
     except socket.error, x:
       if x[0] != errno.ENOTSOCK and x[0] != errno.ENOTCONN:
         raise
@@ -290,9 +294,19 @@ class Server:
         self.log(1, "stdin not socket - falling back to CGI")
         cgi.CGIRequest(self.handler_types[FCGI_RESPONDER]).process()
         return
-    sock.setblocking(1)
+    self._sock.setblocking(1)
     while 1:
-      (newsock, addr) = sock.accept()
+      try:
+        # this select *should* be pointless, however it works around a bug
+        # in OpenBSD whereby the accept() does not get interrupted when
+        # another thread closes the socket (and it does no harm on other
+        # OSes)
+        select.select([self._sock], [], [])
+        (newsock, addr) = self._sock.accept()
+      except socket.error, x:
+        if x[0] == errno.EBADF:
+          break
+        raise
       self.log(1, "accepted connection %d" % newsock.fileno())
       if web_server_addrs and addr not in web_server_addrs:
         self.log(1, "not in web_server_addrs - rejected")
@@ -305,7 +319,7 @@ class Server:
         if self.max_requests <= 0:
           self.log(1, "reached max_requests, exiting")
           break
-    sock.close()
+    self._sock.close()
 
 
 class Request(cgi.Request, threading.Thread):

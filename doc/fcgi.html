@@ -66,6 +66,11 @@ used unless explicitly specified:
 <code style="white-space: normal">{"FCGI_MAX_CONNS":&nbsp;"10",
 "FCGI_MAX_REQS":&nbsp;"10", "FXGI_MPXS_CONNS":&nbsp;"1"}</code>.</p>
 
+<h4><a name="server:exit" id="server:exit"><code><strong>exit(self):</strong></code></a></h4>
+<p>This method will cause the
+<code><a href="#server:run">Server.run()</a></code> loop to exit. This can be
+used to exit the FastCGI application.</p>
+
 <h4><a name="server:run" id="server:run"><code><strong>run(self)</strong></code></a></h4>
 <p>The 'main loop' for the FastCGI application. Listens for connections and
 handles them appropriately.</p>
