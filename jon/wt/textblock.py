@@ -11,7 +11,7 @@ class TextBlock(wt.TemplateCode):
   def main(self, template):
     for self.paragraph in re.split(r"\r?\n\r?\n", self.text()):
       self.paragraph = cgi.html_encode(self.paragraph)
-      self.paragraph = self.paragraph.replace("\n", "<br>")
+      self.paragraph = self.paragraph.replace("\n", "<br />")
       self.process(template)
 
 
@@ -22,7 +22,7 @@ class TextBlock_Links(wt.TemplateCode):
   def main(self, template):
     for self.paragraph in re.split(r"\r?\n\r?\n", self.text()):
       self.paragraph = cgi.html_encode(self.paragraph)
-      self.paragraph = self.paragraph.replace("\n", "<br>")
+      self.paragraph = self.paragraph.replace("\n", "<br />")
       def repl(m):
         return '<a target="_blank" href="%s">%s</a>' % \
           (m.group(2), m.group(1))
