@@ -127,21 +127,34 @@ def process(wt, template, namespace, selected=None):
 class Handler(cgi.Handler):
   cache_code = 0
 
-  def process(self, req):
-    self.req = req
-    self.req.environ["REDIRECT_STATUS"]
-    self.req.set_buffering(1)
+  def _get_template(self):
     for i in xrange(1, 4):
-      self.template = req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
-      if self.template:
-        break
-    else:
-      raise "Couldn't determine template filename"
-    sp = os.path.split(req.environ["DOCUMENT_ROOT"])
+      template = self.req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
+      if template:
+        return template
+    raise "Couldn't determine template filename"
+
+  def _get_etc(self):
+    sp = os.path.split(self.req.environ["DOCUMENT_ROOT"])
     if sp[1] == "":
       sp = os.path.split(sp[0])
-    self.etc = sp[0] + "/etc"
-    codefname = req.environ["PATH_TRANSLATED"]
+    return sp[0] + "/etc"
+
+  def _get_code(self):
+    return self.req.environ["PATH_TRANSLATED"]
+
+  def pre_request(self, obj):
+    pass
+
+  def post_request(self, obj):
+    pass
+
+  def process(self, req):
+    self.req = req
+    self.req.set_buffering(1)
+    self.template = self._get_template()
+    self.etc = self._get_etc()
+    codefname = self._get_code()
     try:
       namespace = _code_cache[codefname]
     except KeyError:
@@ -152,7 +165,9 @@ class Handler(cgi.Handler):
       if self.cache_code:
         _code_cache[codefname] = namespace
     obj = namespace["main"](None, self)
+    self.pre_request(obj)
     if obj.template_as_file:
       obj.main(open(self.template, "rb"))
     else:
       obj.main(open(self.template, "rb").read())
+    self.post_request(obj)

@@ -192,10 +192,15 @@ implementation returns
 
 <h2><a name="handler" id="handler">class</a>: Handler(<a href="cgi.html#request">cgi.Request</a>)</h2>
 <p>This <code>Handler</code> class should be called to process a request
-using the <code>wt</code> templating system. It inspects various environment
-variables to determine which template should be used. All
-<code>wt.<a href="#templatecode">TemplateCode</a></code> objects receive
-a reference to the current instance in their
+using the <code>wt</code> templating system. The default implementation uses
+various environment variables which will have been set up by the
+<a href="http://httpd.apache.org/">Apache</a> configuration shown on the
+<a href="wt-examples.html#apache">wt examples page</a> to determine the code
+and template names, but various methods are provided which may be overridden to
+make these choices in a different way (for example, if you are using a different
+web server). All <code>wt.<a
+href="#templatecode">TemplateCode</a></code>
+objects receive a reference to the current instance in their
 <code>self.<a href="#templatecode:wt">wt</a></code> instance variable.</p>
 
 <h3>Public Instance Variables</h3>
@@ -211,13 +216,36 @@ to locate templates. It is also a useful location to place miscellaneous files
 associated with a web site that should not be under the
 <code>DOCUMENT_ROOT</code>.</p>
 
+<h4><a name="handler:template" id="handler:template"><code><strong>template</strong></code></a></h4>
+<p>The full pathname of the template file.</p>
+
 <h3>Public Methods</h3>
+<h4><a name="handler:pre_request" id="handler:pre_request"><code><strong>pre_request(self, obj)</strong></code></a></h4>
+<p><code><strong>obj</strong></code>:
+<code>wt.<a href="#templatecode">TemplateCode</a></code> instance</p>
+<p>This method may be overridden by subclasses. Its default implementation does
+nothing. It is called just before
+<code>obj.<a href="#templatecode:main">main()</a></code> is called to process
+the request. All the instance variables of <code>self</code> have already been
+set up.</p>
+
+<h4><a name="handler:post_request" id="handler:post_request"><code><strong>post_request(self, obj)</strong></code></a></h4>
+<p><code><strong>obj</strong></code>:
+<code>wt.<a href="#templatecode">TemplateCode</a></code> instance</p>
+<p>This method may be overridden by subclasses. Its default implementation does
+nothing. It is called just after
+<code>obj.<a href="#templatecode:main">main()</a></code> has handled the
+request.</p>
+
 <h4><a name="handler:process" id="handler:process"><code><strong>process(self, req)</strong></code></a></h4>
 <p><code><strong>req</strong></code>:
-<code><a href="cgi.html#request">cgi.Request</a></code> subclass</p>
-<p>This method may be overridden by subclasses. It inspects
-<code>req.<a href="cgi.html#request:environ">environ</a></code> to determine
-the template and code filenames. The code file should contain a subclass of
+<code><a href="cgi.html#request">cgi.Request</a></code> instance</p>
+<p>This method may be overridden by subclasses. It calls
+<code>self.<a href="#handler:_get_template">_get_template()</a></code>,
+<code>self.<a href="#handler:_get_code">_get_code()</a></code> and
+<code>self.<a href="#handler:_get_etc">_get_etc()</a></code> to determine
+the various files and directories to use when handling the request. The code
+file should contain a subclass of
 <code>wt.<a href="#templatecode">TemplateCode</a></code> named
 <code>main</code>, which is passed the entire template file. The global
 namespace the code file is executed in is initialised to contain a reference
@@ -236,6 +264,32 @@ base <code>wt.Handler.process</code> base method.</p>
 &nbsp;&nbsp;&nbsp;&nbsp;wt.Handler.process(self, req)<br />
 &nbsp;&nbsp;&nbsp;&nbsp;self.session.save()<br />
 fcgi.Request({fcgi.FCGI_RESPONDER: Handler}).run()</code></p>
+
+<h3>Protected Methods</h3>
+<h4><a name="handler:_get_template" id="handler:_get_template"><code><strong>_get_template(self)</strong></code></a></h4>
+<p><strong>Returns</strong>: string</p>
+<p>This method may be overridden by subclasses. It returns the full pathname of
+the template file to be used for this request.
+<code>self.<a href="#handler:req">req</a></code> has already been set up. The
+default implementation looks for an environment variable whose name matches
+<code>(REQUEST_){1,4}WT_TEMPLATE_FILENAME</code>.</p>
+
+<h4><a name="handler:_get_code" id="handler:_get_code"><code><strong>_get_code(self)</strong></code></a></h4>
+<p><strong>Returns</strong>: string</p>
+<p>This method may be overridden by subclasses. It returns the full pathname of
+the code file to be used for this request.
+<code>self.<a href="#handler:req">req</a></code> and
+<code>self.<a href="#handler:template">template</a></code> have already been
+set up. The default implementation returns the environment variable
+<code>PATH_TRANSLATED</code>.</p>
+
+<h4><a name="handler:_get_etc" id="handler:_get_etc"><code><strong>_get_etc(self)</strong></code></a></h4>
+<p><strong>Returns</strong>: string</p>
+<p>This method may be overridden by subclasses. It returns the full pathname of
+the directory which <code>self.<a href="#handler:etc">etc</a></code> will be
+set to. <code>self.<a href="#handler:req">req</a></code> has already been set
+up. The pathname should not end with a <code>/</code> character. The default
+implementation returns the equivalent of <code>DOCUMENT_ROOT/../etc</code>.</p>
 
 <p class="cvsid">$Id$</p>
 </body></html>
