@@ -28,7 +28,7 @@ _html_encre = re.compile("[&<>\"'+]")
 # '+' is encoded because it is special in UTF-7, which the browser may select
 # automatically if the content-type header does not specify the character
 # encoding. This is paranoia and is not bulletproof, but it does no harm. See
-# section 4 of www.microsoft.com/technet/security/topics/csoverv.asp
+# section 4 of www.microsoft.com/technet/security/news/csoverv.asp
 _html_encodes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
                   "'": "&#39;", "+": "&#43;" }
 
