@@ -141,7 +141,10 @@ class Handler(cgi.Handler):
     return sp[0] + "/etc"
 
   def _get_code(self):
-    return self.req.environ["PATH_TRANSLATED"]
+    code = self.req.environ.get("PATH_TRANSLATED")
+    if code is None:
+      code = self.req.environ["SCRIPT_FILENAME"]
+    return code
 
   def pre_request(self, obj):
     pass
