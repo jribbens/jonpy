@@ -25,7 +25,7 @@ class Session(dict):
     characters) into self["id"].
 
     It may optionally insert the hash into self["hash"]. If it doesn't, then
-    make_hash will automatically be called later.
+    _make_hash will automatically be called later.
 
     This function may be overridden by subclasses.
     """
@@ -207,6 +207,8 @@ class FileSession(Session):
     f.truncate()
     
   def tidy(cls, max_idle=0, max_age=0, basedir=None):
+    if not max_idle and not max_age:
+      return
     basedir = cls._find_basedir(basedir)
     now = time.time()
     for d in os.listdir(basedir):
@@ -252,9 +254,10 @@ class SQLSession(Session):
       if self.dbc.rowcount == 0:
         break
     self["hash"] = self._make_hash(self["id"], secret)
-    self.dbc.execute("INSERT INTO %s (ID,hash,created,updated) VALUES " \
-      "(%%s,%%s,%%s,%%s)" % (self.table,),
-      (long(self["id"], 16), self["hash"], self.created, self.created))
+    self.dbc.execute("INSERT INTO %s (ID,hash,created,updated,data) VALUES " \
+      "(%%s,%%s,%%s,%%s,%%s)" % (self.table,),
+      (long(self["id"], 16), self["hash"], int(self.created),
+      int(self.created), pickle.dumps({}, 1)))
     self.dbc.execute("UNLOCK TABLES")
 
   def _load(self):
@@ -269,10 +272,10 @@ class SQLSession(Session):
 
   def save(self):
     self.dbc.execute("UPDATE %s SET updated=%%s,data=%%s"
-      " WHERE ID=%%s" % (self.table,), (time.time(),
+      " WHERE ID=%%s" % (self.table,), (int(time.time()),
       pickle.dumps(self.copy(), 1), long(self["id"], 16)))
 
-  def tidy(dbc, table, max_idle=0, max_age=0):
+  def tidy(dbc, table="sessions", max_idle=0, max_age=0):
     if not max_idle and not max_age:
       return
     q = "0=1"
