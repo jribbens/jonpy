@@ -50,6 +50,34 @@ def url_decode(enc):
   return re.sub(_url_decre, lambda m: chr(int(m.group(1), 16)), s)
 
 
+def traceback(req, html=0):
+  import traceback
+  exc = sys.exc_info()
+  if html:
+    try:
+      req.clear_headers()
+      req.clear_output()
+      req.set_header("Content-Type", "text/html; charset=iso-8859-1")
+    except SequencingError:
+      pass
+    req.write("<html><head><title>jonpy traceback</title></head><body>"
+      "<h1>jonpy traceback</h1><pre><b>")
+  for line in traceback.format_exception_only(exc[0], exc[1]):
+    if html:
+      req.write(html_encode(line))
+    req.error(line)
+  if html:
+    req.write("</b>\n")
+  lines = traceback.format_tb(exc[2])
+  lines.reverse()
+  for line in lines:
+    if html:
+      req.write(html_encode(line))
+    req.error(line)
+  if html:
+    req.write("</pre></body></html>\n")
+
+
 class Request:
   """All the information about a CGI-style request, including how to respond."""
   """Headers are buffered in a list before being sent. They are either sent
@@ -251,27 +279,7 @@ class Request:
       self.cookies.load(environ["HTTP_COOKIE"])
 
   def traceback(self):
-    """Output an exception traceback to the client, and to the local log."""
-    import traceback
-    exc = sys.exc_info()
-    try:
-      self.clear_headers()
-      self.clear_output()
-      self.set_header("Content-Type", "text/html; charset=iso-8859-1")
-    except SequencingError:
-      pass
-    self.write("<html><head><title>wt traceback</title></head><body>"
-      "<h1>wt traceback</h1><pre><b>")
-    for line in traceback.format_exception_only(exc[0], exc[1]):
-      self.write(html_encode(line))
-      self.error(line)
-    self.write("</b>\n")
-    lines = traceback.format_tb(exc[2])
-    lines.reverse()
-    for line in lines:
-      self.write(html_encode(line))
-      self.error(line)
-    self.write("</pre></body></html>\n")
+    traceback(self)
 
 
 class CGIRequest(Request):
@@ -291,9 +299,14 @@ class CGIRequest(Request):
     """Read the CGI input and create and run a handler to handle the request."""
     self._init()
     try:
-      self._handler_type().process(self)
+      handler = self._handler_type()
     except:
       self.traceback()
+    else:
+      try:
+        handler.process(self)
+      except:
+        handler.traceback(self)
     self.flush()
 
   def error(self, s):
@@ -325,3 +338,25 @@ class Handler:
   def process(self, req):
     """Handle a request. req is a Request object."""
     raise NotImplementedError, "handler process function must be overridden"
+
+  def traceback(self, req):
+    """Display a traceback, req is a Request object."""
+    traceback(req)
+    try:
+      req.clear_headers()
+      req.clear_output()
+      req.set_header("Content-Type", "text/html; charset=iso-8859-1")
+    except SequencingError:
+      pass
+    req.write("""\
+<html><head><title>Error</title></head>
+<body><h1>Error</h1>
+<p>Sorry, an error occurred. Please try again later.</p>
+</body></html>""")
+
+
+class DebugHandler(Handler):
+  """Handle a request. Provide exception tracebacks to the browser."""
+  def traceback(self, req):
+    """Display a traceback, req is a Request object."""
+    traceback(req, html=1)

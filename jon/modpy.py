@@ -87,9 +87,14 @@ class Request(cgi.Request):
   def process(self, modpy_req):
     self._init(modpy_req)
     try:
-      self._handler_type().process(self)
+      handler = self._handler_type()
     except:
       self.traceback()
+    else:
+      try:
+        handler.process(self)
+      except:
+        handler.traceback(self)
     self.flush()
     return apache.OK
   
