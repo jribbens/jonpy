@@ -78,7 +78,7 @@ def parse_content_disposition(s):
   if i >= len(s):
     return (disposition, {})
   if s[i] != ';':
-    raise Error, "Unexpected character %s in disposition" % s[i]
+    raise Error, "Unexpected character %s in disposition" % `s[i]`
   i+= 1
   return (disposition, parse_params(s[i:]))
     
@@ -98,7 +98,7 @@ def parse_content_type(s):
     raise Error, "Unexpected end of string in type"
   # "/"
   if s[i] != "/":
-    raise Error, "Unexpected character %s in type" % s[i]
+    raise Error, "Unexpected character %s in type" % `s[i]`
   content_type += "/"
   i+= 1
   # subtype
@@ -109,7 +109,7 @@ def parse_content_type(s):
   if i >= len(s):
     return (content_type, {})
   if s[i] != ';':
-    raise Error, "Unexpected character %s in subtype" % s[i]
+    raise Error, "Unexpected character %s in subtype" % `s[i]`
   i+= 1
   return (content_type, parse_params(s[i:]))
 
