@@ -272,7 +272,7 @@ fcgi.Request({fcgi.FCGI_RESPONDER: Handler}).run()</code></p>
 the template file to be used for this request.
 <code>self.<a href="#handler:req">req</a></code> has already been set up. The
 default implementation looks for an environment variable whose name matches
-<code>(REQUEST_){1,4}WT_TEMPLATE_FILENAME</code>.</p>
+<code>(REDIRECT_){1,4}WT_TEMPLATE_FILENAME</code>.</p>
 
 <h4><a name="handler:_get_code" id="handler:_get_code"><code><strong>_get_code(self)</strong></code></a></h4>
 <p><strong>Returns</strong>: string</p>
