@@ -254,7 +254,7 @@ class Connection(threading.Thread):
       
 
 class Server:
-  def __init__(self, handler_types, max_requests = 0):
+  def __init__(self, handler_types, max_requests=0):
     self.handler_types = handler_types
     self.max_requests = max_requests + 1
 
