@@ -6,7 +6,7 @@ from distutils.core import setup
 
 setup(name="jonpy",
       version="0.04",
-      description="Python Web Utilities",
+      description="Jon's Python modules",
       author="Jon Ribbens",
       author_email="jon+jonpy@unequivocal.co.uk",
       url="http://jonpy.sourceforge.net/",
