@@ -106,16 +106,16 @@ class Stage(wt.TemplateCode):
 
   def form(self):
     if self.outer.name is not None:
-      return '<input type="hidden" name="multiform_%s_stage" value="%d">' % \
+      return '<input type="hidden" name="multiform_%s_stage" value="%d" />' % \
         (cgi.html_encode(self.outer.name), self.outer.stage + 1)
-    s = ['<input type="hidden" name="multiform_stage" value="%d">' % \
+    s = ['<input type="hidden" name="multiform_stage" value="%d" />' % \
       (self.outer.stage + 1,)]
     for stage in range(self.outer.stages):
       if stage == self.outer.stage:
         continue
       for key in self.outer.stage_objs[stage].keys:
         if self.outer.container.has_key(key):
-          s.append('<input type="hidden" name="%s" value="%s">' % \
+          s.append('<input type="hidden" name="%s" value="%s" />' % \
             (cgi.html_encode(key), cgi.html_encode(self.outer.container[key])))
     return "".join(s)
 
