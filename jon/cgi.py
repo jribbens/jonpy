@@ -1,6 +1,10 @@
 # $Id$
 
 import sys, re, os, Cookie, errno
+try:
+  import cStringIO as StringIO
+except ImportError:
+  import StringIO
 
 """Object-oriented CGI interface."""
 
@@ -59,7 +63,7 @@ class Request:
     self._doneHeaders = 0
     self._headers = []
     self._bufferOutput = 0
-    self._output = []
+    self._output = StringIO.StringIO()
     self.params = {}
     """The CGI form variables passed from the client."""
     self.cookies = Cookie.SimpleCookie()
@@ -115,7 +119,7 @@ class Request:
 
   def set_buffering(self, f):
     """Specifies whether or not body output is buffered."""
-    if self._output and not f:
+    if self._output.tell() > 0 and not f:
       self.flush()
     self._bufferOutput = f
 
@@ -123,16 +127,17 @@ class Request:
     """Flushes the body output."""
     if not self._doneHeaders:
       self.output_headers()
-    for s in self._output:
-      self._write(s)
-    self._output = []
+    self._write(self._output.getvalue())
+    self._output.seek(0, 0)
+    self._output.truncate()
     self._flush()
 
   def clear_output(self):
     """Discards the contents of the body output buffer."""
     if not self._bufferOutput:
       raise SequencingError, "cannot clear output when not buffering"
-    self._output = []
+    self._output.seek(0, 0)
+    self._output.truncate()
 
   def error(self, s):
     """Records an error message from the program."""
@@ -155,7 +160,7 @@ class Request:
   def write(self, s):
     """Sends some data to the client."""
     if self._bufferOutput:
-      self._output.append(str(s))
+      self._output.write(str(s))
     else:
       if not self._doneHeaders:
         self.output_headers()
