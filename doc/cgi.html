@@ -21,9 +21,14 @@ Instances of this subclass will be created to handle requests.</p>
 each request, but with more complicated protocols such as
 <a href="fcgi.html">FastCGI</a>, a process may handle more than one request
 simultaneously in multiple threads. However, even in this situation, each
-instance of the <code><a href="#handler">Handler</a></code> subclass will only
-be used to process one request at once. This means that the instance can use
-<code>self</code> to store per-request data.</p>
+instance of the <code>cgi.<a href="#handler">Handler</a></code> subclass will
+only be used to process one request at once. This means that the instance can
+use <code>self</code> to store per-request data.</p>
+<p>A subclass of <code>cgi.<a href="#request">Request</a></code> is used to
+to call the handler. Which subclass is used depends on the protocol used to
+communicate with the web server. This module provides
+<code>cgi.<a href="#cgirequest">CGIRequest</a></code> which implements the
+standard CGI protocol.</p>
 <p>Example:</p>
 <p class="code"><code>import jon.cgi as cgi<br />
 class Handler(cgi.Handler):<br />
