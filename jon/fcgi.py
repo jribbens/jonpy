@@ -31,16 +31,29 @@ FCGI_OVERLOADED = 2
 FCGI_UNKNOWN_ROLE = 3
 
 
+# We shouldn't need this function, we should be able to just use socket.makefile
+# instead, but Solaris 2.7 appears to be so broken that stdio doesn't work when
+# you set the buffer size of a stream to zero.
+
+def _sockread(sock, length):
+  data = ""
+  while length > 0:
+    newdata = sock.recv(length)
+    if not newdata:
+      raise EOFError, "End-of-file reading socket"
+    data += newdata
+    length -= len(newdata)
+  return data
+
+
 class Record:
-  def __init__(self, inf=None):
-    if inf:
-      data = inf.read(8)
-      if not data:
-        raise EOFError, "End-of-file reading record"
+  def __init__(self, insock=None):
+    if insock:
+      data = _sockread(insock, 8)
       (self.version, self.type, self.request_id, content_length,
         padding_length) = struct.unpack("!BBHHBx", data)
-      self.content_data = inf.read(content_length)
-      inf.read(padding_length)
+      self.content_data = _sockread(insock, content_length)
+      _sockread(insock, padding_length)
     else:
       self.version = FCGI_VERSION_1
 
@@ -129,7 +142,6 @@ class Connection(threading.Thread):
   def __init__(self, socket, handler_types, *args, **kwargs):
     threading.Thread.__init__(self, *args, **kwargs)
     self.socket = socket
-    self.socketf = socket.makefile("r+b", 0)
     self.socketlock = threading.Lock()
     self.handler_types = handler_types
     self.fileno = self.socket.fileno()
@@ -144,14 +156,14 @@ class Connection(threading.Thread):
   def close(self):
     self.socketlock.acquire()
     try:
-      self.socketf.close()
+      self.socket.close()
     finally:
       self.socketlock.release()
 
   def write(self, rec):
     self.socketlock.acquire()
     try:
-      self.socketf.write(rec.encode())
+      self.socket.sendall(rec.encode())
     finally:
       self.socketlock.release()
 
@@ -164,8 +176,8 @@ class Connection(threading.Thread):
         # in OpenBSD whereby the read() does not get interrupted when
         # another thread closes the socket (and it does no harm on other
         # OSes)
-        select.select([self.socketf], [], [])
-        rec = Record(self.socketf)
+        select.select([self.socket], [], [])
+        rec = Record(self.socket)
       except:
         x = sys.exc_info()[1]
         if isinstance(x, EOFError) or isinstance(x, ValueError) or \
