@@ -254,7 +254,7 @@ class Request:
 
 
 class CGIRequest(Request):
- """An implementation of Request which uses the standard CGI interface."""
+  """An implementation of Request which uses the standard CGI interface."""
 
   def __init__(self, handler_type):
     Request.__init__(self, handler_type)
