@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>fcgi module</title>
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head><body>
+<h1>fcgi module</h1>
+<h2>Synopsis</h2>
+<p>The fcgi module builds upon the classes defined in the
+<code><a href="cgi.html">cgi</a></code> module to provide an implementation
+of the <a href="http://www.fastcgi.com/">FastCGI</a> protocol. Code originally
+written with the CGI protocol in mind can be used unchanged with the FastCGI
+protocol by using this module. The module implements the entire
+<a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html">FastCGI
+specification</a> version 1.0, including multiple simultaneous connections per
+process and multple simultaneous requests per connection. Simultaneous requests
+are executed using Python's threading facilities.</p>
+<h2>Usage</h2>
+<p>See the documentation for the <code><a href="cgi.html">cgi</a></code>
+module for information on how to use the CGI abstraction layer. The only
+difference with the <code>fcgi</code> module is that instead of using
+<code><a href="cgi.html#request">cgi.Request</a></code> to call your handler
+code, you use <code>fcgi.<a href="#server">Server</a></code>. In addition,
+if you are willing to tie your code in to using the FastCGI protocol, you can
+make use of its facilities for providing authorization and filter code.</p>
+<p>Example:</p>
+<p class="code"><code>import jon.cgi as cgi<br />
+import jon.fcgi as fcgi<br />
+class Handler(cgi.Handler):<br />
+&nbsp;&nbsp;def process(self, req):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")<br />
+fcgi.Server({fcgi.FCGI_RESPONDER: Handler}).run()
+</code></p>
+
+<h2><a name="server" id="server">class: Server</a></h2>
+<p><code>Server</code> provides the 'main loop' required by a FastCGI
+application. It accepts connections from the web server and uses
+instances of <code><a href="cgi.html#handler">cgi.Handler</a></code> subclasses 
+to handle the requests.</p>
+
+<h3>Public Methods</h3>
+<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0)</strong></code></a></h4>
+<p><code><strong>handler_types</strong></code>: map from FastCGI request types
+to subclasses of <code><a href="cgi.html#handler">cgi.Handler</a></code><br />
+<code><strong>max_requests</strong></code>: integer</p>
+<p>Create new <code>Server</code> instance. Instances of the appropriate type
+as indicated by <code>handler_types</code> are created to handle the requests.
+The valid keys for the <code>handler_types</code> map are
+<code>fcgi.FCGI_RESPONDER</code>, <code>fcgi.FCGI_AUTHORIZER</code> and
+<code>fcgi.FCGI_FILTER</code>. These types are described in the
+<a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html#56">FastCGI
+specification</a>. The usual one to use (that corresponds to the usual
+function of a CGI application) is <code>fcgi.FCGI_RESPONDER</code>.</p>
+<p>Normally, once started, the server will loop forever accepting connections.
+However, if you specify a non-zero value for <code>max_requests</code> then it
+will exit after that many requests have been initiated. Note that when control
+returns to the caller, requests that have been initiated but not yet completed
+may still be in progress in other threads.</p>
+
+<h4><a name="server:run" id="server:run"><code><strong>run(self)</strong></code></a></h4>
+<p>The 'main loop' for the FastCGI application. Listens for connections and
+handles them appropriately.</p>
+<p>Example:</p>
+<p class="code"><code>fcgi.Server({fcgi.FCGI_RESPONDER: Handler).run()</code></p>
+
+<p class="cvsid">$Id$</p>
+</body></html>
