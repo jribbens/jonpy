@@ -280,6 +280,17 @@ class Request:
 
   def traceback(self):
     traceback(self)
+    try:
+      self.clear_headers()
+      self.clear_output()
+      self.set_header("Content-Type", "text/html; charset=iso-8859-1")
+    except SequencingError:
+      pass
+    self.write("""\
+<html><head><title>Error</title></head>
+<body><h1>Error</h1>
+<p>Sorry, an error occurred. Please try again later.</p>
+</body></html>""")
 
 
 class CGIRequest(Request):
@@ -341,18 +352,7 @@ class Handler:
 
   def traceback(self, req):
     """Display a traceback, req is a Request object."""
-    traceback(req)
-    try:
-      req.clear_headers()
-      req.clear_output()
-      req.set_header("Content-Type", "text/html; charset=iso-8859-1")
-    except SequencingError:
-      pass
-    req.write("""\
-<html><head><title>Error</title></head>
-<body><h1>Error</h1>
-<p>Sorry, an error occurred. Please try again later.</p>
-</body></html>""")
+    req.traceback()
 
 
 class DebugHandler(Handler):
