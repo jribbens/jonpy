@@ -246,8 +246,8 @@ class Connection:
           reply.content_data = struct.pack("!IBBBB",
             0, FCGI_UNKNOWN_ROLE, 0, 0, 0)
           self.write(reply)
-        elif self.threading_level < 2 and self.requests:
-          self.log(2, rec.request_id, "no handler for this role, rejecting")
+        elif waitstream is not None:
+          self.log(2, rec.request_id, "already handling a request, rejecting")
           reply = Record()
           reply.type = FCGI_END_REQUEST
           reply.request_id = rec.request_id
