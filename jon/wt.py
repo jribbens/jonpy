@@ -6,6 +6,8 @@ import sys, os, re
 import jon.cgi as cgi
 
 
+_code_cache = {}
+
 _replace_validchunk = re.compile("^[A-Za-z0-9_]+$")
 
 def replace(wt, template, namespace):
@@ -123,7 +125,7 @@ def process(wt, template, namespace, selected = None):
 
 
 class Handler(cgi.Handler):
-  buffer_code = 1
+  cache_code = 0
 
   def process(self, req):
     self.req = req
@@ -141,23 +143,15 @@ class Handler(cgi.Handler):
       sp = os.path.split(sp[0])
     self.etc = sp[0] + "/etc"
     codefname = req.environ["PATH_TRANSLATED"]
-    if self.buffer_code:
-      try:
-        namespace = self._code_cache[codefname]
-      except:
-        namespace = { "wt": sys.modules["jon.wt"] }
-        code = compile(open(codefname).read(), codefname, "exec")
-        exec code in namespace
-        del code
-        try:
-          self._code_cache[codefname] = namespace
-        except AttributeError:
-          self._code_cache = { codefname: namespace }
-    else:
-      namespace = { "wt": sys.modules["jon.wt"] }
+    try:
+      namespace = _code_cache[codefname]
+    except KeyError:
+      namespace = { "wt": sys.modules[__name__] }
       code = compile(open(codefname).read(), codefname, "exec")
       exec code in namespace
       del code
+      if self.cache_code:
+        _code_cache[codefname] = namespace
     obj = namespace["main"](None, self)
     if obj.template_as_file:
       obj.main(open(self.template))
