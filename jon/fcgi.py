@@ -89,11 +89,11 @@ class NameValueData:
 
   def encode_one(self, nameval):
     if len(nameval[0]) > 127:
-      data = struct.pack("!I", len(nameval[0]) | 0x80000000)
+      data = struct.pack("!I", len(nameval[0]) | (-0x7fffffff-1))
     else:
       data = chr(len(nameval[0]))
     if len(nameval[1]) > 127:
-      data += struct.pack("!I", len(nameval[1]) | 0x80000000)
+      data += struct.pack("!I", len(nameval[1]) | (-0x7fffffff-1))
     else:
       data += chr(len(nameval[1]))
     return data + nameval[0] + nameval[1]
