@@ -98,7 +98,7 @@ start-and-end marker in the same comment is achievable by placing a
 <p>The base class for all code corresponding to template
 <a href="#sections">sections</a>.</p>
 
-<h3>Public Member Variables</h3>
+<h3>Public Instance Variables</h3>
 <h4><a name="templatecode:wt" id="templatecode:wt"><code><strong>wt</strong></code></a></h4>
 <p>A reference to the <code>wt.<a href="#handler">Handler</a></code> instance
 which is handling this request.</p>
@@ -163,7 +163,7 @@ A separate file is read to provide the HTML template for the
 <p>Examples of the use of <code>GlobalTemplate</code> are given in the
 <a href="wt-examples.html#globaltemplate">wt examples page</a>.</p>
 
-<h3>Public Member Variables</h3>
+<h3>Public Class Variables</h3>
 <h4><a name="globaltemplate:page" id="globaltemplate:page"><code><strong>page</strong></code></a></h4>
 <p>This variable may be overridden by subclasses. A
 <code><a href="#templatecode">TemplateCode</a></code> subclass which is
@@ -188,9 +188,9 @@ using the <code>wt</code> templating system. It inspects various environment
 variables to determine which template should be used. All
 <code>wt.<a href="#templatecode">TemplateCode</a></code> objects receive
 a reference to the current instance in their
-<code>self.<a href="#templatecode:wt">wt</a></code> member variable.</p>
+<code>self.<a href="#templatecode:wt">wt</a></code> instance variable.</p>
 
-<h3>Public Member Variables</h3>
+<h3>Public Instance Variables</h3>
 <h4><a name="handler:req" id="handler:req"><code><strong>req</strong></code></a></h4>
 <p>A reference to the <code><a href="cgi.html#request">cgi.Request</a></code>
 instance which contains information about this request.</p>
