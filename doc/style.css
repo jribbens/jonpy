@@ -1,0 +1,9 @@
+/* $Id$ */
+
+body { font-family: sans-serif }
+p { margin-left: 75px }
+h1 { text-align: center }
+h3 { margin-left: 25px }
+h4 { margin-left: 50px }
+.code { border: solid green; white-space: nowrap }
+.cvsid { margin-left: auto; font-size: xx-small }
