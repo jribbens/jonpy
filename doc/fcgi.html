@@ -40,10 +40,11 @@ instances of <code><a href="cgi.html#handler">cgi.Handler</a></code> subclasses
 to handle the requests.</p>
 
 <h3>Public Methods</h3>
-<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0)</strong></code></a></h4>
+<h4><a name="server:__init__" id="server:__init__"><code><strong>__init__(self, handler_types, max_requests=0, params=None)</strong></code></a></h4>
 <p><code><strong>handler_types</strong></code>: map from FastCGI request types
 to subclasses of <code><a href="cgi.html#handler">cgi.Handler</a></code><br />
-<code><strong>max_requests</strong></code>: integer</p>
+<code><strong>max_requests</strong></code>: integer<br />
+<code><strong>params</strong></code>: map from strings to strings</p>
 <p>Create new <code>Server</code> instance. Instances of the appropriate type
 as indicated by <code>handler_types</code> are created to handle the requests.
 The valid keys for the <code>handler_types</code> map are
@@ -57,6 +58,13 @@ However, if you specify a non-zero value for <code>max_requests</code> then it
 will exit after that many requests have been initiated. Note that when control
 returns to the caller, requests that have been initiated but not yet completed
 may still be in progress in other threads.</p>
+<p>You can alter the values that are returned to the web server if it sends a
+<code><a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html#S4.1">FCGI_GET_VALUES</a></code>
+request by using the optional <code>params</code> parameter, which is a map
+from requested variable names to their value. The following default values are
+used unless explicitly specified:
+<code style="white-space: normal">{"FCGI_MAX_CONNS":&nbsp;"10",
+"FCGI_MAX_REQS":&nbsp;"10", "FXGI_MPXS_CONNS":&nbsp;"1"}</code>.</p>
 
 <h4><a name="server:run" id="server:run"><code><strong>run(self)</strong></code></a></h4>
 <p>The 'main loop' for the FastCGI application. Listens for connections and
