@@ -131,7 +131,7 @@ class Handler(cgi.Handler):
   cache_code = 0
 
   def _get_template(self):
-    for i in xrange(1, 4):
+    for i in xrange(0, 4):
       template = self.req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
       if template:
         return template
