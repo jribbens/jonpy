@@ -5,7 +5,7 @@
 from distutils.core import setup
 
 setup(name="jonpy",
-      version="0.01",
+      version="0.02",
       description="Python Web Utilities",
       author="Jon Ribbens",
       author_email="jon+jonpy@unequivocal.co.uk",
