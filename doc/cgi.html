@@ -205,6 +205,9 @@ information to the client, it should only be used during debugging.</p>
 <code><a href="#request:__init__">__init__</a></code> method.</p>
 
 <h3>Protected Methods</h3>
+<h4><a name="request:_init" id="request:_init"><code><strong>_init(sself)</strong></code></a></h4>
+<p>Initialises the instance ready for a new request.</p>
+
 <h4><a name="request:_write" id="request:_write"><code><strong>_write(self, s)</strong></code></a></h4>
 <p><code><strong>s</strong></code>: string</p>
 <p>This is a placeholder method that must be over-ridden by a subclass of the
@@ -267,7 +270,9 @@ input is read from <code>sys.stdin</code>, output goes to
 
 <h3>Public Methods</h3>
 <h4><a name="cgirequest:process" id="cgirequest:process"><code><strong>process(self)</strong></code></a></h4>
-<p>Reads the CGI input and sets up the various instance variables. A
+<p>Initialises the instance ready for a new request by calling the
+<code><a href="#request:_init">_init</a></code> method, then reads the CGI
+input and sets up the various instance variables. A
 <code><a href="#handler">Handler</a></code> object of the type passed to the
 <code>CGIRequest.<a href="#request:__init__">__init__</a></code> method is
 then instantiated and its <code><a href="#handler:process">process</a></code>

@@ -334,6 +334,7 @@ class Request(cgi.Request, threading.Thread):
     self.fcgi_stdin = InputStream()
     self.environ = {}
     self._stderr_used = 0
+    cgi.Request._init(self)
   
   def log(self, level, message):
     if log_level >= level:

@@ -12,6 +12,7 @@ except ImportError:
 class Error(Exception):
   """The base class for all exceptions thrown by this module."""
   pass
+
 class SequencingError(Error):
   """The exception thrown when functions are called out of order."""
   """
@@ -60,6 +61,8 @@ class Request:
     """An object of type handler_type, which should be a subclass of
     Handler, will be used to handle requests."""
     self._handler_type = handler_type
+
+  def _init(self):
     self._doneHeaders = 0
     self._headers = []
     self._bufferOutput = 0
@@ -70,8 +73,6 @@ class Request:
     """The HTTP cookies passed from the client."""
     self.aborted = 0
     """True if this request has been aborted (i.e. the client has gone.)"""
-    self.environ = {}
-    """The environment variables associated with this request."""
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
 
   def output_headers(self):
@@ -268,12 +269,16 @@ class CGIRequest(Request):
 
   def __init__(self, handler_type):
     Request.__init__(self, handler_type)
+
+  def _init(self):
     self.__out = sys.stdout
     self.__err = sys.stderr
     self.environ = os.environ
+    Request._init(self)
 
   def process(self):
     """Read the CGI input and create and run a handler to handle the request."""
+    self._init()
     self._read_cgi_data(self.environ, sys.stdin)
     try:
       self._handler_type().process(self)
