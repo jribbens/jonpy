@@ -198,7 +198,7 @@ enabled, because it is automatically called when the
 <code><a href="#handler:process">Handler.process</a></code> method exits.</p>
 
 <h4><a name="request:close" id="request:close"><code><strong>close(self)</strong></code></a></h4>
-<p>Calls <code><a href="#request:flush">flush()</a></code> and then closes the
+<p>Calls <code><a href="#request:flush">flush</a></code> and then closes the
 output stream. It is essential that this method is called when the request is
 complete, however in general you do not need to call it manually because it is
 automatically called when the
@@ -217,6 +217,37 @@ parameter <code>s</code> somewhere on the server (e.g. in the
 <code>error_log</code>). The string must <strong>not</strong> be output to
 the client.</p>
 
+<h4><a name="request:set_encoding" id="request:set_encoding"><code><strong>set_encoding(self, encoding, [inputencoding])</strong></code></a></h4>
+<p><code><strong>encoding</strong></code>: string or <code>None</code><br />
+<code><strong>inputencoding</strong></code>: string or <code>None</code></p>
+<p>Sets the character encoding used for the response. The default encoding
+is <code>None</code>, which means that no encoding is performed (in which case
+you cannot send <code>unicode</code> objects to
+<code><a href="#request:write">write</a></code> and normal strings are output
+unchanged). If you specify an encoding other than <code>None</code> then you
+can send <code>unicode</code> objects to
+<code><a href="#request:write">write</a></code> and they will be encoded
+correctly. Remember in this case you will probably want to call
+<code><a href="#request:set_header">set_header</a></code> to update the
+<code>Content-Type</code> header to indicate the character encoding you are
+using.</p>
+<p><code>inputencoding</code> is only used if <code>encoding</code> is not
+<code>None</code>. Normally if you pass a non-<code>unicode</code> object to
+<code><a href="#request:write">write</a></code> then it will be assumed to
+be in Python's default character encoding. If you specify a
+non-<code>None</code> <code>inputencoding</code> then it will be assumed to
+be in that character encoding instead.</p>
+<p>Example:</p>
+<p class="code"><code>req.set_encoding("utf-8", "iso-8859-1")<br />
+req.set_header("Content-Type", "text/plain; charset=utf-8")<br />
+req.write("hello \xa1\n") # iso-8859-1 assumed due to inputencoding specified
+above<br />
+req.write(unicode("hello \xa1\n", "cp850"))</code></p>
+
+<h4><a name="request:get_encoding" id="request:get_encoding"><code><strong>get_encoding(self)</strong></code></a></h4>
+<p>Returns the character encoding being used for the response, or
+<code>None</code> if no encoding is being used.</p>
+
 <h4><a name="request:write" id="request:write"><code><strong>write(self, s)</strong></code></a></h4>
 <p><code><strong>s</strong></code>: string</p>
 <p>Sends the string parameter <code>s</code> to the client. If buffering has
@@ -226,15 +257,9 @@ will not be sent to the client immediately but will be buffered in memory.
 If buffering has not been enabled and the HTTP headers array has not already
 been sent then it will be sent before any other output.</p>
 <p>If you wish to be able to output unicode objects using this function, then
-you should wrap the <code><a href="#request">Request</a></code> object in a
-unicode <code>StreamWriter</code>. For example:</p>
-<p class="code"><code>import codecs<br />
-class Handler(cgi.Handler):<br />
-&nbsp;&nbsp;def process(self, req):<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<strong>req = codecs.getwriter("utf8")(req)</strong><br />
-&nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain; charset=utf8")<br />
-&nbsp;&nbsp;&nbsp;&nbsp;msg = unicode("Hello\xa1", "iso-8859-1")<br />
-&nbsp;&nbsp;&nbsp;&nbsp;req.write(msg)</code></p>
+you should first call
+<code><a href="#request:set_encoding">set_encoding</a></code> to specify the
+output character encoding.</p>
 
 <h4><a name="request:traceback" id="request:traceback"><code><strong>traceback(self)</strong></code></a></h4>
 <p>Calls <code><a href="#traceback">traceback</a></code> to send a traceback
@@ -275,7 +300,7 @@ into the <code>self.<a href="#request:params">params</a></code> mapping.</p>
 <code><strong>encoded</strong></code>: file-like object</p>
 <p>This is a utility method for the use of subclasses of the
 <code><a href="#request">Request</a></code> class. The parameter
-<code>encoded</code> must provide a <code>file</code>-like <code>read()</code>
+<code>encoded</code> must provide a <code>file</code>-like <code>read</code>
 method which is then used to parse a MIME-encoded input stream.
 <code>contenttype</code> should contain the value of the
 <code>Content-Type</code> header for the stream (which should presumably
@@ -294,7 +319,7 @@ standard CGI protocol. If the <code>environ</code> variable
 <code><a href="#request:_mergevars">mergevars</a></code> method. If the
 <code>environ</code> variable <code>REQUEST_METHOD</code> is
 <code>POST</code> then the <code>inf</code> parameter (which must provide a
-<code>file</code>-like <code>read()</code> method) is used to read an input
+<code>file</code>-like <code>read</code> method) is used to read an input
 stream which is passed to either the
 <code><a href="#request:_mergevars">mergevars</a></code> method or the
 <code><a href="#request:_mergemime">mergemime</a></code> method depending
@@ -421,7 +446,7 @@ mixed in.</p>
 <p>HTML-encodes (using entities) characters that are special in HTML -
 specifically at least all of <code>&amp;</code> <code>&lt;</code>
 <code>&gt;</code> <code>"</code> and <code>'</code> are
-guaranteed to be encoded. <code>raw</code> is passed to <code>str()</code>,
+guaranteed to be encoded. <code>raw</code> is passed to <code>str</code>,
 so almost any type can be passed in to this parameter.</p>
 <p>Example:</p>
 <p class="code"><code>&gt;&gt;&gt; cgi.html_encode("&lt;foo&gt;")<br />
