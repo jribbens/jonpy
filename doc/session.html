@@ -51,6 +51,37 @@ processing.</p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wt.Handler.process(self, req)<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.session.save()</code></p>
 
+<h2><a name="apache" id="apache">Apache Configuration</a></h2>
+<p>If you are passing the session identifier in the URL, then you will need to
+configure your web server so that it knows what to do with this identifier.
+If you are not embedding the session identifier in the URL, then no extra
+configuration of the web server is required.</p>
+<p>Using <a href="http://httpd.apache.org/">Apache</a>, you should use
+<a href="http://httpd.apache.org/docs/mod/mod_rewrite.html">mod_rewrite</a>
+to extract the session identifier from the URL and pass it in the
+<code>SESSION</code> environment variable. The URL is then modified to remove
+the identifier so that the web server can find the requested page.</p>
+<p>Example using <code>httpd.conf</code>:</p>
+<p class="code"><code>&lt;VirtualHost 192.168.0.1&gt;<br />
+&nbsp;&nbsp;ServerName www.example.com<br />
+&nbsp;&nbsp;&nbsp;...<br />
+&nbsp;&nbsp;RewriteEngine on<br />
+&nbsp;&nbsp;RewriteRule ^/([A-Fa-f0-9]{16})(/.*)$ $2 [E=SESSION:$1]<br />
+&lt;VirtualHost&gt;</code></p>
+<p>Example using an <code>.htaccesss</code> file in the web root directory:</p>
+<p class="code"><code>RewriteEngine on<br />
+RewriteBase /<br />
+RewriteRule ^([A-Fa-f0-9]{16})(/.*)$ $2 [E=SESSION:$1]</code></p>
+<p>If you are using the <code><a href="wt.html">wt</a></code> templating module
+in conjunction with the <code>session</code> module, you should simply put the
+single <code>session</code> <code>RewriteRule</code> line before the
+<code>wt</code> <code>RewriteCond</code> line, e.g.:</p>
+<p class="code"><code>RewriteEngine on<br />
+RewriteBase /<br />
+<strong>RewriteRule ^([A-Fa-f0-9]{16})(/.*)$ $2 [E=SESSION:$1]</strong><br />
+RewriteCond %{DOCUMENT_ROOT}/wt/$1.py -f<br />
+RewriteRule ^(.*)$ /wt/$1.py [E=WT_TEMPLATE_URL:/$1,E=WT_TEMPLATE_FILENAME:%{DOCUMENT_ROOT}/$1]</code></p>
+
 <h2><a name="error" id="error">class: Error(Exception)</a></h2>
 <p>The base class for all exceptions defined by the <code>session</code>
 module.</p>
@@ -106,7 +137,11 @@ session then set this parameter to <code>None</code>.</p>
 <code>url</code> to a true value. You may then optionally also set
 <code>root</code> to be the web root at which sessions are anchored (i.e.
 a string to put before the session identifier in the url). <code>root</code>
-should begin with a <code>/</code> character but should not end in one.</p>
+should begin with a <code>/</code> character but should not end in one. When
+using session identifiers in URLs, the session identifier will be looked for
+in environment variables matching <code>(REDIRECT_){1,4}SESSION</code>.
+Instructions on how to configure Apache to provide this variable are shown
+<a href="#apache">above</a>.</p>
 <p>You can optionally use the HTTP <code>Referer</code> header to help with
 session verification when using session identifiers in urls. If you set the
 <code>referer</code> parameter to a non-empty string (for example, the host
@@ -256,7 +291,7 @@ method.</p>
 &nbsp;&nbsp;PRIMARY KEY (ID)<br />
 )</code></p>
 <p>This class has only been tested with
-<a href="http://www.mysql.org">MySQL</a>, although the intention is that it
+<a href="http://www.mysql.com/">MySQL</a>, although the intention is that it
 should work with any DB API database.</p>
 
 <h4><a name="sqlsession:save" id="sqlsession:save"><code><strong>save(self)</strong></code></a></h4>
