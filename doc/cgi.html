@@ -214,7 +214,7 @@ exception is raised.</p>
 <p>This is a placeholder method that must be over-ridden by a subclass of the
 <code><a href="#request">Request</a></code> class. It should log the string
 parameter <code>s</code> somewhere on the server (e.g. in the
-<code>error_log</code>). The string should <strong>not</strong> be output to
+<code>error_log</code>). The string must <strong>not</strong> be output to
 the client.</p>
 
 <h4><a name="request:write" id="request:write"><code><strong>write(self, s)</strong></code></a></h4>
@@ -247,7 +247,7 @@ to the error log, and outputs a generic error page to the browser.</p>
 <code><a href="#request:__init__">__init__</a></code> method.</p>
 
 <h3>Protected Methods</h3>
-<h4><a name="request:_init" id="request:_init"><code><strong>_init(sself)</strong></code></a></h4>
+<h4><a name="request:_init" id="request:_init"><code><strong>_init(self)</strong></code></a></h4>
 <p>Initialises the instance ready for a new request.</p>
 
 <h4><a name="request:_write" id="request:_write"><code><strong>_write(self, s)</strong></code></a></h4>
@@ -260,7 +260,7 @@ parameter <code>s</code> to the client as part of the response.</p>
 <p>This is a placeholder method that may be over-ridden by a subclass of the
 <code><a href="#request">Request</a></code> class. If whatever mechanism the
 subclass's implementation of <code><a href="#request:_write">_write</a></code>
-can result in data being buffered then this method should ensure that the
+uses can result in data being buffered then this method should ensure that the
 data is flushed to the client.</p>
 
 <h4><a name="request:_mergevars" id="request:_mergevars"><code><strong>_mergevars(self, encoded)</strong></code></a></h4>
@@ -454,7 +454,7 @@ and then decodes URL %-escapes.</p>
 <code>cgi.<a href="#request">Request</a></code><br />
 <strong><code>html</code></strong>: true or false value</p>
 <p>This function should only be called while an exception is being handled
-(i.e. in a <code>raise</code> section). It emits a detailed traceback about
+(i.e. in an <code>except</code> section). It emits a detailed traceback about
 the exception to the server's error log. If <code>html</code> references a
 true value then the traceback is also sent as HTML to the browser. If
 <code>html</code> is false then the browser output is not altered in any way,
