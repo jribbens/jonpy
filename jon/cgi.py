@@ -3,9 +3,9 @@
 import sys, re, os, Cookie, errno
 
 
-class jcgiException(Exception):
+class Error(Exception):
   pass
-class SequencingError(jcgiException):
+class SequencingError(Error):
   pass
 
 
