@@ -56,9 +56,9 @@ server.</p>
 <h4><a name="request:params" id="request:params"><code><strong>params</strong></code></a></h4>
 <p>The <code>params</code> map contains the CGI form variables recovered
 from the <code>QUERY_STRING</code>, and in the case of <code>POST</code>
-requests, the input stream. In the case of each key, the name is a string and
-the type of the value depends on whether or not the name has one of a number of
-special suffixes.</p>
+requests, <code><a href="#request:stdin">stdin</a></code>. In the case of each
+key, the name is a string and the type of the value depends on whether or not
+the name has one of a number of special suffixes.</p>
 <p>If the key has no special suffix, then the value is a string, or
 <code>None</code>. (<code>None</code> occurs when a URL-encoded string contains
 a name without a corresponding equals sign and value. If the string contains
@@ -85,6 +85,16 @@ he is expecting. Example:</p>
 <p class="code"><code>&lt;select multiple name="types*"&gt;<br />
 &lt;option&gt;gif&lt;/option&gt;&lt;option&gt;jpg&lt;/option&gt;&lt;option&gt;png&lt;/option&gt;<br />
 &lt;/select&gt;</code></p>
+
+<h4><a name="request:stdin" id="request:stdin"><code><strong>stdin</strong></code></a></h4>
+<p>A file or file-like object which represents the "standard input stream" for
+the request. For example, for a genuine CGI request this will be a reference to
+<code>sys.stdin</code>.</p>
+<p><strong>Note</strong>: the first time you access the
+<code><a href="#request:params">params</a></code> variable, this stream may be
+read to retrieve the form variables. Therefore, you <strong>must not</strong>
+access both <code>params</code> and <code>stdin</code> during the same
+request.</p>
 
 <h4><a name="request:cookies" id="request:cookies"><code><strong>cookies</strong></code></a></h4>
 <p>The <code>cookies</code> variable is a <code>Cookies.SimpleCookie</code>

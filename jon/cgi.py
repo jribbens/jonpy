@@ -67,13 +67,23 @@ class Request:
     self._headers = []
     self._bufferOutput = 0
     self._output = StringIO.StringIO()
-    self.params = {}
-    """The CGI form variables passed from the client."""
+    try:
+      del self.params
+    except AttributeError:
+      pass
     self.cookies = Cookie.SimpleCookie()
     """The HTTP cookies passed from the client."""
     self.aborted = 0
     """True if this request has been aborted (i.e. the client has gone.)"""
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
+
+  def __getattr__(self, name):
+    if name == "params":
+      self.params = {}
+      self._read_cgi_data(self.environ, self.stdin)
+      return self.__dict__["params"]
+    raise AttributeError, "%s instance has no attribute %s" % \
+      (self.__class__.__name__, `name`)
 
   def output_headers(self):
     """Output the list of headers."""
@@ -274,12 +284,12 @@ class CGIRequest(Request):
     self.__out = sys.stdout
     self.__err = sys.stderr
     self.environ = os.environ
+    self.stdin = sys.stdin
     Request._init(self)
 
   def process(self):
     """Read the CGI input and create and run a handler to handle the request."""
     self._init()
-    self._read_cgi_data(self.environ, sys.stdin)
     try:
       self._handler_type().process(self)
     except:

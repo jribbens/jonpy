@@ -1,6 +1,6 @@
 # $Id$
 
-import cgi, struct, socket, sys, threading, errno, os, select
+import cgi, fakefile, struct, socket, sys, threading, errno, os, select
 
 log_level = 0
 
@@ -102,8 +102,9 @@ class NameValueData:
     return reduce(lambda x,y: x+y, map(self.encode_one, self.values), "")
 
 
-class InputStream:
+class InputStream(fakefile.FakeInput):
   def __init__(self):
+    fakefile.FakeInput.__init__(self)
     self.data = []
     self.eof = 0
     self.pos = 0
@@ -116,7 +117,7 @@ class InputStream:
       self.eof = 1
     self.sema.release()
   
-  def read(self, nbytes=-1):
+  def _read(self, nbytes=-1):
     ret = ""
     while nbytes != 0:
       while not self.eof and not self.data:
@@ -248,7 +249,7 @@ class Connection(threading.Thread):
         if req:
           if log_level >= 4:
             self.log(4, rec.request_id, "FCGI_STDIN: %s" % `rec.content_data`)
-          req.fcgi_stdin.add_data(rec.content_data)
+          req.stdin.add_data(rec.content_data)
         else:
           self.log(2, rec.request_id, "unknown request_id (FCGI_STDIN)")
       elif rec.type == FCGI_DATA:
@@ -277,7 +278,7 @@ class Request(cgi.Request, threading.Thread):
     self.__request_id = request_id
     self.__flags = flags
     self.fcgi_data = InputStream()
-    self.fcgi_stdin = InputStream()
+    self.stdin = InputStream()
     self.environ = {}
     self._stderr_used = 0
     cgi.Request._init(self)
@@ -289,8 +290,6 @@ class Request(cgi.Request, threading.Thread):
 
   def run(self):
     self.log(2, "New request running")
-    self._read_cgi_data(self.environ, self.fcgi_stdin)
-    self.log(3, "Read CGI data: %s" % `self.params`)
     self.log(2, "Calling handler")
     try:
       self._handler_type().process(self)
