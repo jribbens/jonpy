@@ -290,5 +290,41 @@ should be used to inspect the request and to send the response.</p>
 <code>Handler</code> subclass will only have one <code>process</code> method
 executing at once.</p>
 
+<h2>Globals</h2>
+<h3>Functions</h3>
+<h4><a name="html_encode" id="html_encode"><code><strong>html_encode(raw)</strong></code></a></h4>
+<p><code><strong>raw</strong></code>: any<br />
+<strong>Returns</strong>: string</p>
+<p>HTML-encodes (using entities) characters that are special in HTML -
+specifically at least all of <code>&amp;</code> <code>&lt;</code>
+<code>&gt;</code> <code>"</code> <code>'</code> and <code>+</code> are
+guaranteed to be encoded. <code>raw</code> is passed to <code>str()</code>,
+so almost any type can be passed in to this parameter.</p>
+<p>Example:</p>
+<p class="code"><code>&gt;&gt;&gt; cgi.html_encode("&lt;foo&gt;")<br />
+'&amp;lt;foo&amp;gt;'</code></p>
+
+<h4><a name="url_encode" id="url_encode"><code><strong>url_encode(raw)</strong></code></a></h4>
+<p><code><strong>raw</strong></code>: any<br />
+<strong>Returns</strong>: string</p>
+<p>URL-encodes (using %-escapes) characters that are special in URLs.
+Characters that are special in HTML are guaranteed to be escaped, so the output
+of this function is safe to embed directly in HTML without the need for a
+further call to <code><a href="#html_encode">html_encode</a></code>.
+<code>raw</code> is passed to <code>str()</code>, so almost any type can be
+passed in to this parameter.</p>
+<p>Example:</p>
+<p class="code"><code>&gt;&gt;&gt; cgi.url_encode("&lt;foo&gt;")<br />
+'%3Cfoo%3E'</code></p>
+
+<h4><a name="url_decode" id="url_decode"><code><strong>url_decode(enc)</strong></code></a></h4>
+<p><code><strong>enc</strong></code>: string<br />
+<strong>Returns</strong>: string</p>
+<p>Converts <code>+</code> to space characters in the <code>enc</code> string
+and then decodes URL %-escapes.</p>
+<p>Example:</p>
+<p class="code"><code>&gt;&gt;&gt; cgi.url_decode("%3Cfoo%3E")<br />
+'&lt;foo&gt;'</code></p>
+
 <p class="cvsid">$Id$</p>
 </body></html>
