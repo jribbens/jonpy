@@ -73,7 +73,7 @@ class Request(cgi.Request):
     self._modpy_req = modpy_req
     self._build_environ()
     self._redirected = 0
-    cgi._init(self)
+    cgi.Request._init(self)
 
   def _build_environ(self):
     modpy_req = self._modpy_req
