@@ -69,11 +69,11 @@ class InputStream:
 
 
 class Request(cgi.Request):
-  def __init__(self, handler_type, modpy_req):
+  def _init(self, modpy_req):
     self._modpy_req = modpy_req
-    cgi.Request.__init__(self, handler_type)
     self._build_environ()
     self._redirected = 0
+    cgi._init(self)
 
   def _build_environ(self):
     modpy_req = self._modpy_req
@@ -134,8 +134,8 @@ class Request(cgi.Request):
     if hdr == "Location":
       self._redirected = 0
 
-  def process(self):
-    self._modpy_req.add_common_vars()
+  def process(self, modpy_req):
+    self._init(modpy_req)
     self._read_cgi_data(self.environ, InputStream(self._modpy_req))
     try:
       self._handler_type().process(self)
