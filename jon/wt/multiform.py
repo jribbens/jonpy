@@ -33,8 +33,10 @@ class MultiForm(wt.TemplateCode):
       if self.container is None:
         self.container = {}
         self.wt.session[key] = self.container
+        self.init()
     else:
       self.container = {}
+      self.init()
 
     # Determine which stage we're at. Initialise if this is a new run.
 
@@ -46,8 +48,9 @@ class MultiForm(wt.TemplateCode):
       self.stage = int(self.stage)
     except ValueError:
       self.stage = 0
-      self.container.clear()
-      self.init()
+      if key is not None:
+        self.container.clear()
+        self.init()
 
     # Create the stage objects. Update the container with submitted form
     # values. Update stage objects with container values.
