@@ -41,7 +41,7 @@ PythonHandler handler</code></p>
 <code>/cgi-bin/wt.py</code> into <code>/wt/handler.py</code>. The global
 function <code>handler</code> in this file will be called by mod_python to
 handle requests, so you should also add this function, which should use
-<code>wt.<a href="wt.html#handler">wt.Handler</a></code> or your subclass of it
+<code><a href="wt.html#handler">wt.Handler</a></code> or your subclass of it
 to handle the request:</p>
 <p class="code"><code>def handler(modpy_req):<br />
 &nbsp;&nbsp;return modpy.Request(wt.Handler).process(modpy_req)</code></p>
