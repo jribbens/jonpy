@@ -11,6 +11,7 @@ HTML templating system. This page contains examples of how to perform various
 common operations using <code>wt</code>.</p>
 
 <h2><a name="apache" id="apache">Apache Configuration</a></h2>
+<h3><a name="apache:httpd.conf" id="apache:httpd.conf">Using <code>httpd.conf</code></a></h3>
 <p><code>wt</code> uses a dual-hierarchy system to separate and identify data
 (HTML) files and associated code files. This requires some configuration of the
 web server in order to allow it to provide the correct information to
@@ -53,6 +54,24 @@ cgi.CGIRequest(wt.Handler).process()</code></p>
 <p>You can also perform global setup actions in this file, for example
 altering <code>sys.path[0]</code> to point to a directory where you place
 site-specific modules.</p>
+
+<h3><a name="apache:.htaccess" id="apache:.htaccess">Using <code>.htaccess</code></a></h3>
+<p>If you do not have access to edit <code>httpd.conf</code> on your web server,
+you can set up the server for use with <code>wt</code> using
+<code>.htaccess</code> files instead. The way it works and your
+<code>/cgi-bin/wt.py</code> file are exactly the same as the
+<code><a href="#apache:httpd.conf">httpd.conf</a></code> case shown above, but
+the <code>mod_rewrite</code> commands are very slightly different.</p>
+<p>You will need two <code>.htaccess</code> files. The first goes in the web
+root directory:</p>
+<p class="code"><code>RewriteEngine on<br />
+RewriteBase /<br />
+RewriteCond %{DOCUMENT_ROOT}/wt/$1.py -f<br />
+RewriteRule ^(.*)$ /wt/$1.py [E=WT_TEMPLATE_URL:/$1,E=WT_TEMPLATE_FILENAME:%{DOCUMENT_ROOT}/$1]</code></p>
+<p>The second <code>.htaccess</code> file goes in the <code>/wt/</code>
+subdirectory of the web root:</p>
+<p class="code"><code>Action wt-handler /cgi-bin/wt.py<br />
+SetHandler wt-handler</code></p>
 
 <h2><a name="templatecode" id="templatecode"></a><code><a href="wt.html#templatecode">TemplateCode</a></code> examples</h2>
 <h3>Simple replacements</h3>
