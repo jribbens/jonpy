@@ -117,13 +117,11 @@ class InputStream:
     self.sema.release()
   
   def read(self, nbytes=-1):
-    if self.eof and not self.data:
-      return ""
     ret = ""
-    while not self.eof and nbytes != 0:
+    while nbytes != 0:
       while not self.eof and not self.data:
         self.sema.acquire()
-      if self.eof:
+      if self.eof and not self.data:
         break
       if nbytes < 0:
         ret += self.data.pop(0)
@@ -329,7 +327,10 @@ class Request(cgi.Request, threading.Thread):
     self._read_cgi_data(self.environ, self.fcgi_stdin)
     self.log(3, "Read CGI data: %s" % `self.params`)
     self.log(2, "Calling handler")
-    self._handler_type().process(self)
+    try:
+      self._handler_type().process(self)
+    except:
+      self.traceback()
     self.log(2, "Handler finished")
     self.flush()
     if self.aborted < 2:
