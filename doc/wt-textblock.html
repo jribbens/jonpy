@@ -19,7 +19,9 @@ Newlines of the form <code>\n</code> or <code>\r\n</code> are supported.</p>
 <p class="html"><code>&lt;!--wt:body--&gt;<br />
 &lt;p&gt;$$=paragraph$$&lt;/p&gt;<br />
 &lt;!--wt:/body--&gt;</code></p>
-<p class="code"><code>class body(wt.textblock.TextBlock):<br />
+<p class="code"><code>import jon.wt.textblock as textblock<br />
+<br />
+class body(textblock.TextBlock):<br />
 &nbsp;&nbsp;def text(self, template):<br />
 &nbsp;&nbsp;&nbsp;&nbsp;return self.outer.article["body"]</code></p>
 <p>Note the use of the <code>=</code> literal encoding specifier, because
