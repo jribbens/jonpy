@@ -20,6 +20,10 @@ class SequencingError(Error):
 _url_encre = re.compile(r"[^A-Za-z0-9-]")
 _url_decre = re.compile(r"%([0-9A-Fa-f]{2})")
 _html_encre = re.compile("[&<>\"'+]")
+# '+' is encoded because it is special in UTF-7, which the browser may select
+# automatically if the content-type header does not specify the character
+# encoding. This is paranoia and is not bulletproof, but it does no harm. See
+# section 4 of www.microsoft.com/technet/security/topics/csoverv.asp
 _html_encodes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
                   "'": "&#39;", "+": "&#43;" }
 
