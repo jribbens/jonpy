@@ -2,6 +2,8 @@
 
 import cgi, struct, socket, sys, threading, errno, os
 
+log_level = 0
+
 FCGI_LISTENSOCK_FILENO = 0
 FCGI_VERSION_1 = 1
 
@@ -55,13 +57,13 @@ class NameValueData:
     pos = 0
     while pos < len(data):
       if ord(data[pos]) & 128:
-        name_length = struct.unpack("!I", data[pos:pos+4]) & 0x7fffffff
+        name_length = struct.unpack("!I", data[pos:pos+4])[0] & 0x7fffffff
         pos += 4
       else:
         name_length = ord(data[pos])
         pos += 1
       if ord(data[pos]) & 128:
-        value_length = struct.unpack("!I", data[pos:pos+4]) & 0x7fffffff
+        value_length = struct.unpack("!I", data[pos:pos+4])[0] & 0x7fffffff
         pos += 4
       else:
         value_length = ord(data[pos])
@@ -130,6 +132,14 @@ class Connection(threading.Thread):
     self.socketf = socket.makefile("r+b")
     self.socketlock = threading.Lock()
     self.handler_types = handler_types
+    self.fileno = self.socket.fileno()
+
+  def log(self, level, request_id, message):
+    if log_level >= level:
+      if request_id:
+        log_file.write("%3d/%3d %s\n" % (self.fileno, request_id, message))
+      else:
+        log_file.write("%3d     %s\n" % (self.fileno, message))
 
   def close(self):
     self.socket.close()
@@ -141,16 +151,19 @@ class Connection(threading.Thread):
     self.socketlock.release()
 
   def run(self):
+    self.log(2, 0, "New connection running")
     self.requests = {}
     while 1:
       try:
         rec = Record(self.socketf)
       except EOFError:
+        self.log(2, 0, "EOF received on connection")
         for req in self.requests.values():
           req.aborted = 1
         break
       if rec.type == FCGI_GET_VALUES:
         data = NameValueData(rec.content_data)
+        self.log(3, 0, "FCGI_GET_VALUES: %s" % `data.values`)
         reply = Record()
         reply.type = FCGI_GET_VALUES_RESULT
         reply.request_id = 0
@@ -167,7 +180,9 @@ class Connection(threading.Thread):
       elif rec.type == FCGI_BEGIN_REQUEST:
         (role, flags) = struct.unpack("!HB", rec.content_data[:3])
         handler_type = self.handler_types.get(role)
+        self.log(2, rec.request_id, "FCGI_BEGIN_REQUEST: role = %d" % role)
         if not handler_type:
+          self.log(2, rec.request_id, "no handler for this role, rejecting")
           reply = Record()
           reply.type = FCGI_END_REQUEST
           reply.request_id = rec.request_id
@@ -182,36 +197,59 @@ class Connection(threading.Thread):
         if req:
           if rec.content_data:
             data = NameValueData(rec.content_data)
+            self.log(3, rec.request_id, "FCGI_PARAMS: %s" % `data.values`)
             for nameval in data.values:
               req.environ[nameval[0]] = nameval[1]
           else:
+            self.log(2, rec.request_id, "starting request thread")
             req.start()
+        else:
+          self.log(2, rec.request_id, "unknown request_id (FCGI_PARAMS)")
       elif rec.type == FCGI_ABORT_REQUEST:
         req = self.requests.get(rec.request_id)
         if req:
+          self.log(2, rec.request_id, "FCGI_ABORT_REQUEST")
           req.aborted = 1
+        else:
+          self.log(2, rec.request_id, "unknown request_id (FCGI_ABORT_REQUEST)")
       elif rec.type == FCGI_STDIN:
         req = self.requests.get(rec.request_id)
         if req:
+          if log_level >= 4:
+            self.log(4, rec.request_id, "FCGI_STDIN: %s" % `rec.content_data`)
           req.fcgi_stdin.add_data(rec.content_data)
+        else:
+          self.log(2, rec.request_id, "unknown request_id (FCGI_STDIN)")
       elif rec.type == FCGI_DATA:
         req = self.requests.get(rec.request_id)
         if req:
+          if log_level >= 4:
+            self.log(4, rec.request_id, "FCGI_DATA: %s" % `rec.content_data`)
           req.fcgi_data.add_data(rec.content_data)
+        else:
+          self.log(2, rec.request_id, "unknown request_id (FCGI_DATA)")
       else:
+        self.log(2, rec.request_id, "unknown type %d" % rec.type)
         reply = Record()
         reply.type = FCGI_UNKNOWN_TYPE
         reply.request_id = 0
         reply.content_data = chr(rec.type) + "\x00" * 7
         self.write(reply)
+    self.close()
       
 
 class Server:
   def __init__(self, handler_types):
     self.handler_types = handler_types
 
+  def log(self, level, message):
+    if log_level >= level:
+      log_file.write("        %s\n" % message)
+
   def run(self):
+    self.log(1, "Server.run()")
     web_server_addrs = os.environ.get("FCGI_WEB_SERVER_ADDRS", "").split(",")
+    self.log(1, "web_server_addrs = %s" % `web_server_addrs`)
     sock = socket.fromfd(sys.stdin.fileno(), socket.AF_INET, socket.SOCK_STREAM)
     try:
       sock.getpeername()
@@ -219,15 +257,19 @@ class Server:
       if x[0] != errno.ENOTSOCK and x[0] != errno.ENOTCONN:
         raise
       if x[0] == errno.ENOTSOCK:
+        self.log(1, "stdin not socket - falling back to CGI")
         cgi.CGIRequest(self.handler_types[FCGI_RESPONDER]).process()
         return
     sock.setblocking(1)
     while 1:
       (newsock, addr) = sock.accept()
+      self.log(1, "accepted connection %d" % newsock.fileno())
       if web_server_addrs and addr not in web_server_addrs:
+        self.log(1, "not in web_server_addrs - rejected")
         newsock.close()
         continue
       Connection(newsock, self.handler_types).start()
+      del newsock
 
 
 class Request(cgi.Request, threading.Thread):
@@ -242,31 +284,49 @@ class Request(cgi.Request, threading.Thread):
     self.fcgi_stdin = InputStream()
     self.environ = {}
     self._stderr_used = 0
+  
+  def log(self, level, message):
+    if log_level >= level:
+      log_file.write("%3d/%3d %s\n" % (self.__connection.fileno,
+        self.__request_id, message))
 
   def run(self):
+    self.log(2, "New request running")
     self.read_cgi_data(self.environ, self.fcgi_stdin)
+    self.log(3, "Read CGI data: %s" % `self.params`)
+    self.log(2, "Calling handler")
     self._handler_type().process(self)
+    self.log(2, "Handler finished")
     self.flush()
     rec = Record()
     rec.type = FCGI_STDOUT
     rec.request_id = self.__request_id
     rec.content_data = ""
     self.__connection.write(rec)
+    self.log(2, "Closed FCGI_STDOUT")
     if self._stderr_used:
       rec.type = FCGI_STDERR
       self.__connection.write(rec)
+      self.log(2, "Closed FCGI_STDERR")
     rec.type = FCGI_END_REQUEST
     rec.request_id = self.__request_id
     rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE, 0, 0, 0)
     self.__connection.write(rec)
+    self.log(2, "Sent FCGI_END_REQUEST")
     if not self.__flags & FCGI_KEEP_CONN:
       self.__connection.close()
+      self.log(2, "Closed connection")
     del self.__connection.requests[self.__request_id]
+    self.log(2, "Request complete")
 
   def _write(self, s):
+    if log_level >= 4:
+      self.log(4, "FCGI_STDOUT: %s" % `s`)
     self._recwrite(FCGI_STDOUT, s)
 
   def error(self, s):
+    if log_level >= 4:
+      self.log(4, "FCGI_STDERR: %s" % `s`)
     self._recwrite(FCGI_STDERR, s)
     self._stderr_used = 1
 
@@ -289,3 +349,7 @@ class Request(cgi.Request, threading.Thread):
 
   def _flush(self):
     pass
+
+
+if log_level > 0:
+  log_file = open("/tmp/fcgi.log", "a", 1)
