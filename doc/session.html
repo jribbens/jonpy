@@ -190,10 +190,12 @@ session data.</p>
 individual files in the filesystem, under the <code>basedir</code> directory.
 If <code>basedir</code> is not specified then the environment variable
 <code>TMPDIR</code> is used instead, or if there is no such environment
-variable then </code>/tmp</code> is used. A directory is created under this
+variable then <code>/tmp</code> is used. A directory is created under this
 named <code>jon-sessions-%d</code> where <code>%d</code> is the current
 user id. If this directory already exists then it must be owned by the current
-user.</p>
+user. <code>req</code>, <code>secret</code>, and <code>kwargs</code> are passed
+to the base class's <code><a href="#session:__init__">__init__</a></code>
+method.</p>
 
 <h4><a name="filesession:save" id="filesession:save"><code><strong>save(self)</strong></code></a></h4>
 <p>The session's dictionary is written to the filesystem.</p>
@@ -234,7 +236,10 @@ instance<br />
 <code><strong>table</strong></code>: string</p>
 <p>Creates a new SQLSession instance. Session data will be stored using
 rows in an SQL table. The database is accessed via the <code>Cursor</code>
-instance <code>dbc</code> and the table name <code>table</code>.</p>
+instance <code>dbc</code> and the table name <code>table</code>.
+<code>req</code>, <code>secret</code>, and <code>kwargs</code> are passed to
+the base class's <code><a href="#session:__init__">__init__</a></code>
+method.</p>
 <p>The table must have at least the following fields:</p>
 <p class="code"><code>CREATE TABLE sessions (<br />
 &nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VARCHAR(8) NOT NULL,<br />
