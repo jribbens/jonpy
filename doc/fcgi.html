@@ -69,6 +69,14 @@ used unless explicitly specified:
 <h4><a name="server:run" id="server:run"><code><strong>run(self)</strong></code></a></h4>
 <p>The 'main loop' for the FastCGI application. Listens for connections and
 handles them appropriately.</p>
+<p>If the program does not appear to be running in a FastCGI environment
+(i.e. <code>stdin</code> is not a socket) then this method will automatically
+fall back to the CGI protocol and attempt to execute the
+<code>fcgi.FCGI_RESPONDER</code> handler using
+<code><a href="cgi.html#cgirequest">cgi.CGIRequest</a></code>. This means that
+you can write your applications using the <code>fcgi</code> module and you can
+switch between using FastCGI and ordinary CGI simply by changing your web
+server configuration, with no changes required to your code.</p>
 <p>Example:</p>
 <p class="code"><code>fcgi.Server({fcgi.FCGI_RESPONDER: Handler}).run()</code></p>
 
