@@ -97,8 +97,8 @@ def _tb_encode(s):
 def traceback(req, html=0):
   import traceback, time, types, linecache, inspect, repr
   repr = repr.Repr()
-  repr.maxother = 80
-  repr.maxstring = 80
+  repr.maxother = 200
+  repr.maxstring = 200
   repr = repr.repr
   (etype, evalue, etb) = sys.exc_info()
   if type(etype) is types.ClassType:
