@@ -149,8 +149,7 @@ class FileSession(Session):
     try:
       st = os.lstat(basedir)
       if st[4] != os.getuid():
-        raise Exception, "Sessions basedir is not owned by user %d" % \
-          os.getuid()
+        raise Error, "Sessions basedir is not owned by user %d" % \ os.getuid()
     except OSError, x:
       if x[0] == errno.ENOENT:
         os.mkdir(basedir, 0700)
