@@ -21,7 +21,7 @@ class SequencingError(Error):
   pass
 
 
-_url_encre = re.compile(r"[^A-Za-z0-9-]")
+_url_encre = re.compile(r"[^A-Za-z0-9_.!~*()-]") # RFC 2396 section 2.3
 _url_decre = re.compile(r"%([0-9A-Fa-f]{2})")
 _html_encre = re.compile("[&<>\"'+]")
 # '+' is encoded because it is special in UTF-7, which the browser may select
