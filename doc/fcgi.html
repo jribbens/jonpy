@@ -74,7 +74,9 @@ used unless explicitly specified:</p>
 </table>
 <p>You can alter the class used to provide request information using
 <code>request_type</code>. The class provided must always be a subclass of
-<code>fcgi.<a href="#request">Request</a></code>.</p>
+<code>fcgi.<a href="#request">Request</a></code>. For instance, you might
+wish to use <code>fcgi.<a href="#gziprequest">GZipRequest</a></code>
+instead.</p>
 <p>By default, <code>fcgi</code> uses threading to handle requests. It creates
 one thread per connection. However, on some platforms threading is either not
 available, or the operating system support for it is buggy. You can alter the
@@ -133,6 +135,16 @@ public interface but uses the FastCGI protocol behinid the scenes.</p>
 <p>A file-like object that provides the <code>FASTCGI_DATA</code> stream as
 provided by the FastCGI protocol. This is not used by ordinary CGI applications,
 but may be used by <code>FCGI_FILTER</code> code.</p>
+
+<h2><a name="gziprequest" id="gziprequest"></a>class: GZipRequest(<a href="cgi.html#gzipmixin">GZipMixIn</a>, <a href="#request">Request</a>)</h2>
+<p>For convenience, this class provides the standard
+<code><a href="#request">Request</a></code> class with the
+<code>cgi.<a href="cgi.html#gzipmixin">GZipMixIn</a></code> already mixed
+in. To use this class, specify it as the value of the
+<code>request_type</code> parameter when creating your
+<code><a href="#server">Server</a></code> object.</p>
+<p>Example:</p>
+<p class="code"><code>fcgi.Server({fcgi.FCGI_RESPONDER: Handler}, request_type=fcgi.GZipRequest).run()</code></p>
 
 <p class="cvsid">$Id$</p>
 </body></html>

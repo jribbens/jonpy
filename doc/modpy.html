@@ -84,5 +84,14 @@ do not contain absolute URLs.</p>
 <p class="code"><code>def handler(modpy_req):<br />
 &nbsp;&nbsp;return modpy.Request(wt.Handler).process(modpy_req)</code></p>
 
+<h2><a name="gziprequest" id="gziprequest"></a>class: GZipRequest(<a href="cgi.html#gzipmixin">GZipMixIn</a>, <a href="#request">Request</a>)</h2>
+<p>For convenience, this class provides the standard
+<code><a href="#request">Request</a></code> class with the
+<code>cgi.<a href="cgi.html#gzipmixin">GZipMixIn</a></code> already mixed
+in.</p>
+<p>Example:</p>
+<p class="code"><code>def handler(modpy_req):<br />
+&nbsp;&nbsp;return modpy.GZipRequest(wt.Handler).process(modpy_req)</code></p>
+
 <p class="cvsid">$Id$</p>
 </body></html>
