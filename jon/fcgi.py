@@ -1,6 +1,6 @@
 # $Id$
 
-import cgi, struct, socket, sys, threading, errno, os
+import cgi, struct, socket, sys, threading, errno, os, select, errno
 
 log_level = 0
 
@@ -129,7 +129,7 @@ class Connection(threading.Thread):
   def __init__(self, socket, handler_types, *args, **kwargs):
     threading.Thread.__init__(self, *args, **kwargs)
     self.socket = socket
-    self.socketf = socket.makefile("r+b")
+    self.socketf = socket.makefile("r+b", 0)
     self.socketlock = threading.Lock()
     self.handler_types = handler_types
     self.fileno = self.socket.fileno()
@@ -142,25 +142,40 @@ class Connection(threading.Thread):
         log_file.write("%3d     %s\n" % (self.fileno, message))
 
   def close(self):
-    self.socket.close()
+    self.socketlock.acquire()
+    try:
+      self.socketf.close()
+    finally:
+      self.socketlock.release()
 
   def write(self, rec):
     self.socketlock.acquire()
-    self.socketf.write(rec.encode())
-    self.socketf.flush()
-    self.socketlock.release()
+    try:
+      self.socketf.write(rec.encode())
+    finally:
+      self.socketlock.release()
 
   def run(self):
     self.log(2, 0, "New connection running")
     self.requests = {}
     while 1:
       try:
+        # this select *should* be pointless, however it works around a bug
+        # in OpenBSD whereby the read() does not get interrupted when
+        # another thread closes the socket (and it does no harm on other
+        # OSes)
+        select.select([self.socketf], [], [])
         rec = Record(self.socketf)
-      except EOFError:
-        self.log(2, 0, "EOF received on connection")
-        for req in self.requests.values():
-          req.aborted = 1
-        break
+      except:
+        x = sys.exc_info()[1]
+        if isinstance(x, EOFError) or isinstance(x, ValueError) or \
+          (isinstance(x, socket.error) and x[0] == errno.EBADF):
+          self.log(2, 0, "EOF received on connection")
+          for req in self.requests.values():
+            req.aborted = 2
+          break
+        else:
+          raise
       if rec.type == FCGI_GET_VALUES:
         data = NameValueData(rec.content_data)
         self.log(3, 0, "FCGI_GET_VALUES: %s" % `data.values`)
@@ -180,7 +195,8 @@ class Connection(threading.Thread):
       elif rec.type == FCGI_BEGIN_REQUEST:
         (role, flags) = struct.unpack("!HB", rec.content_data[:3])
         handler_type = self.handler_types.get(role)
-        self.log(2, rec.request_id, "FCGI_BEGIN_REQUEST: role = %d" % role)
+        self.log(2, rec.request_id,
+          "FCGI_BEGIN_REQUEST: role = %d, flags = %d" % (role, flags))
         if not handler_type:
           self.log(2, rec.request_id, "no handler for this role, rejecting")
           reply = Record()
@@ -235,7 +251,6 @@ class Connection(threading.Thread):
         reply.request_id = 0
         reply.content_data = chr(rec.type) + "\x00" * 7
         self.write(reply)
-    self.close()
       
 
 class Server:
@@ -298,21 +313,29 @@ class Request(cgi.Request, threading.Thread):
     self._handler_type().process(self)
     self.log(2, "Handler finished")
     self.flush()
-    rec = Record()
-    rec.type = FCGI_STDOUT
-    rec.request_id = self.__request_id
-    rec.content_data = ""
-    self.__connection.write(rec)
-    self.log(2, "Closed FCGI_STDOUT")
-    if self._stderr_used:
-      rec.type = FCGI_STDERR
-      self.__connection.write(rec)
-      self.log(2, "Closed FCGI_STDERR")
-    rec.type = FCGI_END_REQUEST
-    rec.request_id = self.__request_id
-    rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE, 0, 0, 0)
-    self.__connection.write(rec)
-    self.log(2, "Sent FCGI_END_REQUEST")
+    if self.aborted < 2:
+      try:
+        rec = Record()
+        rec.type = FCGI_STDOUT
+        rec.request_id = self.__request_id
+        rec.content_data = ""
+        self.__connection.write(rec)
+        self.log(2, "Closed FCGI_STDOUT")
+        if self._stderr_used:
+          rec.type = FCGI_STDERR
+          self.__connection.write(rec)
+          self.log(2, "Closed FCGI_STDERR")
+        rec.type = FCGI_END_REQUEST
+        rec.request_id = self.__request_id
+        rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE,
+          0, 0, 0)
+        self.__connection.write(rec)
+        self.log(2, "Sent FCGI_END_REQUEST")
+      except IOError, x:
+        if x[0] == errno.EPIPE:
+          self.log(2, "EPIPE during request finalisation")
+        else:
+          raise
     if not self.__flags & FCGI_KEEP_CONN:
       self.__connection.close()
       self.log(2, "Closed connection")
@@ -345,7 +368,14 @@ class Request(cgi.Request, threading.Thread):
         else:
           rec.content_data = s[pos:pos+65535]
         pos += len(rec.content_data)
-        self.__connection.write(rec)
+        try:
+          self.__connection.write(rec)
+        except IOError, x:
+          if x[0] == errno.EPIPE:
+            self.aborted = 2
+            self.log(2, "Aborted due to EPIPE")
+          else:
+            raise
 
   def _flush(self):
     pass
