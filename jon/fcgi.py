@@ -417,7 +417,7 @@ class Request(cgi.Request):
 
 class Server:
   def __init__(self, handler_types, max_requests=0, params=None,
-    request_type=Request, threading_level=2):
+    request_type=Request, threading_level=1):
     self.handler_types = handler_types
     self.max_requests = max_requests
     self.params = params
