@@ -97,6 +97,9 @@ def _tb_encode(s):
 def traceback(req, html=0):
   import traceback, time, types, linecache, inspect, repr
   repr = repr.Repr()
+  repr.maxdict = 10
+  repr.maxlist = 10
+  repr.maxtuple = 10
   repr.maxother = 200
   repr.maxstring = 200
   repr = repr.repr
