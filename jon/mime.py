@@ -35,7 +35,8 @@ class Entity(rfc822.Message):
     self.entities = []
     if self.content_type and self.content_type[0][:10] == "multipart/":
       bre = re.compile(r"(" + eol + r")?--" +
-        re.escape(self.content_type[1]["boundary"]) + r"(--)?[ \t]*" + eol)
+        re.escape(self.content_type[1]["boundary"]) + r"(--)?[ \t]*" +
+        r"(" + eol + r")?")
       msg = fp.read()
       start = 0
       while 1:
@@ -48,7 +49,7 @@ class Entity(rfc822.Message):
         if start == 0:
           self.body = msg[start:end.start()]
         else:
-          self.entities.append(Entity(msg[start:end.start()], mime=1))
+          self.entities.append(Entity(msg[start:end.start()], mime=1, eol=eol))
         start = end.end()
         if end.group(2) == "--":
           break
