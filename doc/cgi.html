@@ -52,7 +52,7 @@ well as methods to return a response. This class is not used directly, but
 is subclassed depending on what protocol is being used to talk to the web
 server.</p>
 
-<h3>Public Member Variables</h3>
+<h3>Public Instance Variables</h3>
 <h4><a name="request:params" id="request:params"><code><strong>params</strong></code></a></h4>
 <p>The <code>params</code> map contains the CGI form variables recovered
 from the <code>"QUERY_STRING"</code>, and in the case of <code>POST</code>
@@ -198,7 +198,7 @@ the <code><a href="#request:write">write</a></code> method).</p>
 <p><strong>Important:</strong> Since this method leaks a great deal of
 information to the client, it should only be used during debugging.</p>
 
-<h3>Protected Member Variables</h3>
+<h3>Protected Instance Variables</h3>
 <h4><a name="request:_handler_type" id="request:_handler_type"><code><strong>_handler_type</strong></code></a></h4>
 <p>The <code>_handler_type</code> variable is initialised by the
 <code>handler_type</code> parameter to the
@@ -252,7 +252,7 @@ stream which is passed to either the
 on the <code>environ</code> variable <code>"CONTENT_TYPE"</code>. Finally,
 if the <code>environ</code> variable <code>"HTTP_COOKIE"</code> is available
 then it is parsed into the
-<code>self.<a href="#request:cookies">cookies</a></code> member variable.</p>
+<code>self.<a href="#request:cookies">cookies</a></code> instance variable.</p>
 
 <h2><a name="cgirequest" id="cgirequest">class</a>: CGIRequest(<a href="#request">Request</a>)</h2>
 <p><code>CGIRequest</code> subclasses the 
@@ -263,7 +263,7 @@ input is read from <code>sys.stdin</code>, output goes to
 
 <h3>Public Methods</h3>
 <h4><a name="cgirequest:process" id="cgirequest:process"><code><strong>process(self)</strong></code></a></h4>
-<p>Reads the CGI input and sets up the various member variables. A
+<p>Reads the CGI input and sets up the various instance variables. A
 <code><a href="#handler">Handler</a></code> object of the type passed to the
 <code>CGIRequest.<a href="#request:__init__">__init__</a></code> method is
 then instantiated and its <code><a href="#handler:process">process</a></code>
