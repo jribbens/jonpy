@@ -1,71 +1,20 @@
 # $Id$
 
 from mod_python import apache
-import jon.cgi as cgi
+import cgi, fakefile
 
 
 class Error(Exception):
   pass
 
 
-class InputStream:
+class InputStream(fakefile.FakeInput):
   def __init__(self, modpy_req):
+    fakefile.FakeInput.__init__(self)
     self._modpy_req = modpy_req
-    self.closed = 0
-    self.mode = "rb"
-    self.name = "<mod_python input stream>"
-    self.softspace = 0
 
-  def close(self):
-    self.closed = 1
-
-  def _check_open(self):
-    if self.closed:
-      raise IOError, "File is closed"
-
-  def flush(self):
-    self._check_open()
-
-  def read(self, size=-1):
-    self._check_open()
+  def _read(self, size=-1):
     return self._modpy_req.read(size)
-
-  def readline(self, size=-1):
-    self._check_open()
-    return self._modpy_req.readline(size)
-
-  def readlines(self, size=-1):
-    self._check_open()
-    lines = []
-    while 1:
-      line = self.readline()
-      if line == "":
-        return lines
-      lines.append(line)
-      if size >= 0:
-        size -= len(line)
-        if size <= 0:
-          return lines
-
-  def xreadlines(self):
-    self._check_open()
-    import xreadlines
-    return xreadlines.xreadlines(self)
-
-  def seek(self, offset, whence=0):
-    raise IOError, "cannot seek() mod_python input stream"
-
-  def tell(self):
-    raise IOError, "cannot tell() mod_python input stream"
-
-  def truncate(self):
-    raise IOError, "cannot truncate() mod_python input stream"
-  
-  def write(self, s):
-    raise IOError, "cannot write() mod_python input stream"
-
-  def writelines(self, s):
-    raise IOError, "cannot writelines() mod_python input stream"
 
 
 class Request(cgi.Request):
@@ -73,6 +22,7 @@ class Request(cgi.Request):
     self._modpy_req = modpy_req
     self._build_environ()
     self._redirected = 0
+    self.stdin = InputStream(modpy_req)
     cgi.Request._init(self)
 
   def _build_environ(self):
@@ -136,7 +86,6 @@ class Request(cgi.Request):
 
   def process(self, modpy_req):
     self._init(modpy_req)
-    self._read_cgi_data(self.environ, InputStream(self._modpy_req))
     try:
       self._handler_type().process(self)
     except:
