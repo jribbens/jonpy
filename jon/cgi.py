@@ -115,8 +115,7 @@ def traceback(req, html=0):
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>jonpy traceback: %s</title></head>
-<body>
+<head><title>jonpy traceback: %s</title>
 <style type="text/css"><!--
 BODY { background-color: #f0f0f8; font-family: helveta, arial, sans-serif }
 .tb_head { background-color: #6622aa; color: #ffffff }
@@ -127,6 +126,7 @@ BODY { background-color: #f0f0f8; font-family: helveta, arial, sans-serif }
 .tb_code { color: #909090 }
 .tb_dump { color: #909090; font-size: smaller }
 --></style>
+</head><body>
 <table width="100%%" cellspacing="0" cellpadding="0" border="0">
 <tr class="tb_head">
 <td valign="bottom" class="tb_title">&nbsp;<br /><strong>%s</strong></td>
