@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>cgi module</title>
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head><body>
+<h1>cgi module</h1>
+<h2>Synopsis</h2>
+<p>The cgi module provides an object-oriented interface for writing CGI and
+CGI-style programs. It provides an abstraction layer so that the same code can
+be used with either standard CGI or replacement technologies such as
+FastCGI.</p>
+<h2>Usage</h2>
+<p>Code to handle a request must subclass the abstract class
+<code>cgi.<a href="#handler">Handler</a></code>. This class uses a single
+method <code><a href="#handler:process">process</a></code> which receives a
+single parameter of type <code>cgi.<a href="#request">Request</a></code>, which
+is used to retrieve information about the request and to send the response.
+Instances of this subclass will be created to handle requests.</p>
+<p>When the standard CGI protocol is used, a new process is created to handle
+each request, but with more complicated protocols such as
+<a href="fcgi.html">FastCGI</a>, a process may handle more than one request
+simultaneously in multiple threads. However, even in this situation, each
+instance of the <code><a href="#handler">Handler</a></code> subclass will only
+be used to process one request at once. This means that the instance can use
+<code>self</code> to store per-request data.</p>
+<p>Example:</p>
+<p class="code"><code>import jon.cgi as cgi<br />
+class Handler(cgi.Handler):<br />
+&nbsp;&nbsp;def process(self, req):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.write("Hello, world!\n")<br />
+cgi.CGIRequest(Handler).process()
+</code></p>
+
+<h2><a name="error" id="error">class: Error(Exception)</a></h2>
+<p>The base class for all exceptions defined by the <code>cgi</code> module.</p>
+
+<h2><a name="sequencingerror" id="sequencingerror">class</a>:
+SequencingError(<a href="#error">Error</a>)</h2>
+<p>An exception class which is raised when <code>cgi</code> object methods
+are called out of order.</p>
+
+<h2><a name="request" id="request">class: Request</a></h2>
+<p><code>Request</code> objects provide information about a CGI request, as
+well as methods to return a response. This class is not used directly, but
+is subclassed depending on what protocol is being used to talk to the web
+server.</p>
+
+<h3>Public Member Variables</h3>
+<h4><a name="request:params" id="request:params"><code><strong>params</strong></code></a></h4>
+<p>The <code>params</code> map contains the CGI form variables recovered
+from the <code>"QUERY_STRING"</code>, and in the case of <code>POST</code>
+requests, the input stream. In the case of each key, the name is a string and
+the type of the value depends on whether or not the name has one of a number of
+special suffixes.</p>
+<p>If the key has no special suffix, then the value is a string, or
+<code>None</code>. (<code>None</code> occurs when a URL-encoded string contains
+a name without a corresponding equals sign and value. If the string contains
+a name and an equals sign but no value then this is represented as an empty
+string.) If the key ends with the string <code>"*"</code> then the value is a
+list containing one or more values, each of which is either a string or
+<code>None</code> (to support multiple values with the same name, e.g. HTML
+<code>&lt;select&gt;</code> input fields). If the key ends with the string
+<code>"!"</code> then the value is a
+<code><a href="mime.html#entity">mime.Entity</a></code>
+object (to support file uploads). If the key ends with the string
+<code>"!*"</code> then the value is a list of one or more
+<code><a href="mime.html#entity">mime.Entity</a></code> objects.</p>
+<p>If a form variable is found with a name ending in <code>"!"</code> or
+<code>"!*"</code> but it did not arrive in the form of a MIME section then it
+is ignored and is not placed into the map. If more than one value with the same
+name is found and the name does not end in <code>"*"</code> or <code>"!*"</code>
+then only one of the values will be entered into the map, and the others will
+be discarded. This means that, even in the face of malicious input, the types
+of the values are guaranteed to match that indicated by their key's suffix.</p>
+<p>Note that the suffixes must be present in the CGI variables themselves. The
+programmer does not indicate to the <code>cgi</code> module what CGI variables
+he is expecting. Example:</p>
+<p class="code"><code>&lt;select multiple name="types*"&gt;<br />
+&lt;option&gt;gif&lt;/option&gt;&lt;option&gt;jpg&lt;/option&gt;&lt;option&gt;png&lt;/option&gt;<br />
+&lt;/select&gt;</code></p>
+
+<h4><a name="request:cookies" id="request:cookies"><code><strong>cookies</strong></code></a></h4>
+<p>The <code>cookies</code> variable is a <code>Cookies.SimpleCookie</code>
+object which contains cookies passed to the server by the client.</p>
+
+<h4><a name="request:environ" id="request:environ"><code><strong>environ</strong></code></a></h4>
+<p>The <code>environ</code> map contains the environment variables associated
+with the request. All keys and values in the map are strings.</p>
+
+<h4><a name="request:aborted" id="request:aborted"><code><strong>aborted</strong></code></a></h4>
+<p>If the <code>aborted</code> variable references a true value then the
+request has been aborted (usually because the client has gone away). If the
+request is aborted then all further output using the
+<code><a href="#request:write">write</a></code> method will be discarded.
+The programmer may inspect the <code>aborted</code> variable occasionally and
+exit if the request has been aborted, but it is not necessary to do so.</p>
+
+<h3>Public Methods</h3>
+<h4><a name="request:__init__" id="request:__init__"><code><strong>__init__(self, handler_type)</strong></code></a></h4>
+<p><code><strong>handler_type</strong></code>:
+<code>cgi.<a href="#handler">Handler</a></code> subclass</p>
+<p>Create new Request instance. Instances of <code>handler_type</code> will
+be created to handle requests.</p>
+<p>The array of HTTP headers will be initialised to contain a
+<code>"Content-Type"</code> header with the value <code>"text/html;
+charset=iso-8859-1"</code>. If this is not appropriate then the content type
+should be overridden by specifying a new one with the
+<code><a href="#request:set_header">set_header</a></code> method.</p>
+
+<h4><a name="request:output_headers" id="request:output_headers"><code><strong>output_headers()</strong></code></a></h4>
+<p>Output the accumulated array of HTTP headers. If the headers have already
+been output then a
+<code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
+raised.</p>
+
+<h4><a name="request:clear_headers" id="request:clear_headers"><code><strong>clear_headers()</strong></code></a></h4>
+<p>Clear the accumulated array of HTTP headers. If the headers have already
+been output then a
+<code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception
+is raised.</p>
+
+<h4><a name="request:add_header" id="request:add_header"><code><strong>add_header(self, hdr, val)</strong></code></a></h4>
+<p><code><strong>hdr</strong></code>: string<br />
+<code><strong>val</strong></code>: string</p>
+<p>Add a header to the array of HTTP headers. If the headers have already
+been output then a
+<code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
+raised.</p>
+<p>Example:</p>
+<p class="code"><code>req.add_header("Set-Cookie", "foo=bar; path=/")</code></p>
+
+<h4><a name="request:set_header" id="request:set_header"><code><strong>set_header(self, hdr, val)</strong></code></a></h4>
+<p><code><strong>hdr</strong></code>: string<br />
+<code><strong>val</strong></code>: string</p>
+<p>Add a header to the array of HTTP headers. If a header or headers of the
+same name already exist in the array, then they are deleted before the new
+header is added. If the headers have already been output then a
+<code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
+raised.</p>
+<p>Example:</p>
+<p class="code"><code>req.set_header("Content-Type", "image/jpeg")</code></p>
+
+<h4><a name="request:del_header" id="request:del_header"><code><strong>del_header(self, hdr)</strong></code></a></h4>
+<p><code><strong>hdr</strong></code>: string</p>
+<p>Remove all headers with the name <code>hdr</code> from the array of HTTP
+headers. If the headers have already been output then a
+<code>cgi.<a href="#sequencingerror">SequencingError</a></code> exception is
+raised.</p>
+
+<h4><a name="request:set_buffering" id="request:set_buffering"><code><strong>set_buffering(self, f)</strong></code></a></h4>
+<p><code><strong>f</strong></code>: true or false value</p>
+<p>Specify whether or not client output sent using
+<code><a href="#request:write">write</a></code> will be buffered. If buffering
+is disabled when output has already been buffered then the existing buffer
+will be flushed immediately.</p>
+
+<h4><a name="request:flush" id="request:flush"><code><strong>flush(self)</strong></code></a></h4>
+<p>Flushes any buffered output to the client. If the HTTP headers array has not
+already been sent then it will be sent before any other output. Generally
+speaking, you do not need to call <code>flush</code>, even if you enable
+buffering, because it is automatically called when the
+<code><a href="#handler:process">Handler.process</a></code> method exits.</p>
+
+<h4><a name="request:clear_output" id="request:clear_output"><code><strong>clear_output(self)</strong></code></a></h4>
+<p>Discards any output that has been buffered. If output buffering is not
+enabled then a <code>cgi.<a href="#sequencingerror">SequencingError</a></code>
+exception is raised.</p>
+
+<h4><a name="request:error" id="request:error"><code><strong>error(self, s)</strong></code></a></h4>
+<p><code><strong>s</strong></code>: string</p>
+<p>This is a placeholder method that must be over-ridden by a subclass of the
+<code><a href="#request">Request</a></code> class. It should log the string
+paramter <code>s</code> somewhere on the server (e.g. in the
+<code>error_log</code>). The string should <strong>not</strong> be output to
+the client.</p>
+
+<h4><a name="request:write" id="request:write"><code><strong>write(self, s)</strong></code></a></h4>
+<p><code><strong>s</strong></code>: string</p>
+<p>Sends the string parameter <code>s</code> to the client. If buffering has
+been enabled using
+<code><a href="#request:set_buffering">set_buffering</a></code> then the string
+will not be sent to the client immediately but will be buffered in memory.
+If buffering has not been enabled and the HTTP headers array has not already
+been sent then it will be sent before any other output.</p>
+
+<h4><a name="request:traceback" id="request:traceback"><code><strong>traceback(self)</strong></code></a></h4>
+<p>Uses <code>sys.exc_info()</code> to retrieve the current exception, and
+outputs a traceback to both the local error log (using the
+<code><a href="#request:error">error</a></code> method) and the client (using
+the <code><a href="#request:write">write</a></code> method).</p>
+<p><strong>Important:</strong> Since this method leaks a great deal of
+information to the client, it should only be used during debugging.</p>
+
+<h3>Protected Member Variables</h3>
+<h4><a name="request:_handler_type" id="request:_handler_type"><code><strong>_handler_type</strong></code></a></h4>
+<p>The <code>_handler_type</code> variable is initialised by the
+<code>handler_type</code> parameter to the
+<code><a href="#request:__init__">__init__</a></code> method.</p>
+
+<h3>Protected Methods</h3>
+<h4><a name="request:_write" id="request:_write"><code><strong>_write(self, s)</strong></code></a></h4>
+<p><code><strong>s</strong></code>: string</p>
+<p>This is a placeholder method that must be over-ridden by a subclass of the
+<code><a href="#request">Request</a></code> class. It should output the string
+paramter <code>s</code> to the client as part of the response.</p>
+
+<h4><a name="request:_flush" id="request:_flush"><code><strong>_flush(self)</strong></code></a></h4>
+<p>This is a placeholder method that may be over-ridden by a subclass of the
+<code><a href="#request">Request</a></code> class. If whatever mechanism the
+subclass's implementation of <code><a href="#request:_write">_write</a></code>
+can result in data being buffered then this method should ensure that the
+data is flushed to the client.</p>
+
+<h4><a name="request:_mergevars" id="request:_mergevars"><code><strong>_mergevars(self, encoded)</strong></code></a></h4>
+<p><code><strong>encoded</strong></code>: string</p>
+<p>This is a utility method for the use of subclasses of the
+<code><a href="#request">Request</a></code> class. It parses the URL-encoded
+string parameter <code>encoded</code> and merges the key/value pairs found
+into the <code>self.<a href="#request:params">params</a></code> mapping.</p>
+
+<h4><a name="request:_mergemime" id="request:_mergemime"><code><strong>_mergemime(self, encoded)</strong></code></a></h4>
+<p><code><strong>encoded</strong></code>: file-like object</p>
+<p>This is a utility method for the use of subclasses of the
+<code><a href="#request">Request</a></code> class. The parameter
+<code>encoded</code> must provide a <code>file</code>-like <code>read()</code>
+method which is then used to parse a MIME-encoded input stream. MIME sections
+found with <code>Content-Disposition: form-data</code> are merged into the
+<code>self.<a href="#request:params">params</a></code> mapping.</p>
+
+<h4><a name="request:_read_cgi_data" id="request:_read_cgi_data"><code><strong>_read_cgi_data(self, environ, inf)</strong></code></a></h4>
+<p><code><strong>environ</strong></code>: map<br />
+<code><strong>inf</strong></code>: file-like object</p>
+<p>This is a utility method for the use of subclasses of the
+<code><a href="#request">Request</a></code> class. Examines the environment
+strings contained in the map parameter <code>environ</code> as per the
+standard CGI protocol. If the <code>environ</code> variable
+<code>"QUERY_STRING"</code> is available then it is parsed using the
+<code><a href="#request:_mergevars">mergevars</a></code> method. If the
+<code>environ</code> variable <code>"REQUEST_METHOD"</code> is
+<code>"POST"</code> then the <code>inf</code> parameter (which must provide a
+<code>file</code>-like <code>read()</code> method) is used to read an input
+stream which is passed to either the
+<code><a href="#request:_mergevars">mergevars</a></code> method or the
+<code><a href="#request:_mergemime">mergemime</a></code> method depending
+on the <code>environ</code> variable <code>"CONTENT_TYPE"</code>. Finally,
+if the <code>environ</code> variable <code>"HTTP_COOKIE"</code> is available
+then it is parsed into the
+<code>self.<a href="#request:cookies">cookies</a></code> member variable.</p>
+
+<h2><a name="cgirequest" id="cgirequest">class</a>: CGIRequest(<a href="#request">Request</a>)</h2>
+<p><code>CGIRequest</code> subclasses the 
+<code><a href="#request">Request</a></code> class to implement the standard
+CGI protocol. Environment variables are read from <code>os.environ</code>,
+input is read from <code>sys.stdin</code>, output goes to
+<code>sys.stdout</code> and errors go to <code>sys.stderr</code>.</p>
+
+<h3>Public Methods</h3>
+<h4><a name="cgirequest:process" id="cgirequest:process"><code><strong>process(self)</strong></code></a></h4>
+<p>Reads the CGI input and sets up the various member variables. A
+<code><a href="#handler">Handler</a></code> object of the type passed to the
+<code>CGIRequest.<a href="#request:__init__">__init__</a></code> method is
+then instantiated and its <code><a href="#handler:process">process</a></code>
+method is called. If an exception is thrown by this method then the
+<code><a href="#request:traceback">traceback</a></code> method is called to
+display it.</p>
+<p>Example:</p>
+<p class="code"><code>cgi.CGIRequest(Handler).process()</code></p>
+
+<h2><a name="handler" id="handler">class: Handler</a></h2>
+<p>This is an abstract class which should be subclassed by the programmer
+to provide the code which handles a request.</p>
+
+<h3>Public Methods</h3>
+<h4><a name="handler:process" id="handler:process"><code><strong>process(self, req)</strong></code></a></h4>
+<p><code><strong>req</strong></code>: object of type
+<code>cgi.<a href="#request">Request</a></code></p>
+<p>This method is called to process a request. The <code>req</code> parameter
+references the <code><a href="#request">Request</a></code> object (actually, an
+instance of a subclass of <code><a href="#request">Request</a></code>) which
+should be used to inspect the request and to send the response.</p>
+<p>Note that even in multithreaded situations such as
+<a href="fastcgi.html">FastCGI</a>, any individual instance of a
+<code>Handler</code> subclass will only have one <code>process</code> method
+executing at once.</p>
+
+<p class="cvsid">$Id$</p>
+</body></html>
