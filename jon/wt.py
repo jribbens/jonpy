@@ -129,6 +129,12 @@ class Handler(cgi.Handler):
     self.req = req
     self.req.environ["REDIRECT_STATUS"]
     self.req.set_buffering(1)
+    for i in xrange(1, 4):
+      self.template = req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
+      if self.template:
+        break
+    else:
+      raise "Couldn't determine template filename"
     self.template = req.environ["REDIRECT_REDIRECT_WT_TEMPLATE_FILENAME"]
     sp = os.path.split(req.environ["DOCUMENT_ROOT"])
     if sp[1] == "":
