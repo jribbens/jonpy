@@ -211,7 +211,10 @@ associated with a web site that should not be under the
 <code>req.<a href="cgi.html#request:environ">environ</a></code> to determine
 the template and code filenames. The code file should contain a subclass of
 <code>wt.<a href="#templatecode">TemplateCode</a></code> named
-<code>main</code>, which is passed the entire template file. See the
+<code>main</code>, which is passed the entire template file. The global
+namespace the code file is executed in is initialised to contain a reference
+to the <code>wt</code> module in the variable <code>wt</code>, thus avoiding
+the need to do <code>import jon.wt as wt</code> in every code file. See the
 <a href="wt-examples.html#apache">wt examples page</a> for how to set up
 <a href="http://httpd.apache.org/">Apache</a> so that <code>wt</code> knows
 what's going on.</p>
