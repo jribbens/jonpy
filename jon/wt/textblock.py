@@ -4,7 +4,7 @@ import re
 import jon.wt as wt
 import jon.cgi as cgi
 
-class textblock(wt.TemplateCode):
+class TextBlock(wt.TemplateCode):
   def text(self):
     return ""
 
@@ -15,7 +15,7 @@ class textblock(wt.TemplateCode):
       self.process(template)
 
 
-class textblock_links(wt.TemplateCode):
+class TextBlock_Links(wt.TemplateCode):
   def text(self):
     return ""
 
@@ -28,3 +28,9 @@ class textblock_links(wt.TemplateCode):
           (m.group(2), m.group(1))
       self.paragraph = re.sub(r"\|([^|]+)\|([^|]+)\|", repl, self.paragraph)
       self.process(template)
+
+
+# legacy names
+
+textblock = TextBlock
+textblock_links = TextBlock_Links
