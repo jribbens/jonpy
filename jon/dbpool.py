@@ -26,6 +26,9 @@ def set_database(dbmod, minconns):
   if len(dbmod.apilevel) != 3 or dbmod.apilevel[:2] != "2." or \
     not dbmod.apilevel[2].isdigit():
     raise ValueError, "specified database module is not DB API 2.0 compliant"
+  if dbmod.threadsafety < 1:
+    raise ValueError, "specified database module must have threadsafety level" \
+      " of at least 1"
   g = globals()
   g["_dbmod"] = dbmod
   g["_available"] = {}
