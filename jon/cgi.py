@@ -256,6 +256,8 @@ class Request(object):
     self._headers = []
     self._bufferOutput = 1
     self._output = StringIO.StringIO()
+    self._pos = 0
+    self.closed = 0
     try:
       del self.params
     except AttributeError:
@@ -276,11 +278,18 @@ class Request(object):
 
   def close(self):
     """Closes the output stream."""
-    self.flush()
-    self._close()
+    if not self.closed:
+      self.flush()
+      self._close()
+      self.closed = 1
+
+  def _check_open(self):
+    if self.closed:
+      raise ValueError, "I/O operation on closed file"
 
   def output_headers(self):
     """Output the list of headers."""
+    self._check_open()
     if self._doneHeaders:
       raise SequencingError, "output_headers() called twice"
     for pair in self._headers:
@@ -290,12 +299,14 @@ class Request(object):
 
   def clear_headers(self):
     """Clear the list of headers."""
+    self._check_open()
     if self._doneHeaders:
       raise SequencingError, "cannot clear_headers() after output_headers()"
     self._headers = []
 
   def add_header(self, hdr, val):
     """Add a header to the list of headers."""
+    self._check_open()
     if self._doneHeaders:
       raise SequencingError, \
         "cannot add_header(%s) after output_headers()" % `hdr`
@@ -303,6 +314,7 @@ class Request(object):
 
   def set_header(self, hdr, val):
     """Add a header to the list of headers, replacing any existing values."""
+    self._check_open()
     if self._doneHeaders:
       raise SequencingError, \
         "cannot set_header(%s) after output_headers()" % `hdr`
@@ -322,6 +334,7 @@ class Request(object):
 
   def del_header(self, hdr):
     """Removes all values for a header from the list of headers."""
+    self._check_open()
     if self._doneHeaders:
       raise SequencingError, \
         "cannot del_header(%s) after output_headers()" % `hdr`
@@ -336,12 +349,14 @@ class Request(object):
 
   def set_buffering(self, f):
     """Specifies whether or not body output is buffered."""
+    self._check_open()
     if self._output.tell() > 0 and not f:
       self.flush()
     self._bufferOutput = f
 
   def flush(self):
     """Flushes the body output."""
+    self._check_open()
     if not self._doneHeaders:
       self.output_headers()
     self._write(self._output.getvalue())
@@ -351,6 +366,7 @@ class Request(object):
 
   def clear_output(self):
     """Discards the contents of the body output buffer."""
+    self._check_open()
     if not self._bufferOutput:
       raise SequencingError, "cannot clear output when not buffering"
     self._output.seek(0, 0)
@@ -381,12 +397,42 @@ class Request(object):
 
   def write(self, s):
     """Sends some data to the client."""
+    self._check_open()
+    s = str(s)
     if self._bufferOutput:
-      self._output.write(str(s))
+      self._output.write(s)
     else:
       if not self._doneHeaders:
         self.output_headers()
-      self._write(str(s))
+      self._pos += len(s)
+      self._write(s)
+  
+  def tell(self):
+    return self._pos + self._output.tell()
+  
+  def seek(self, offset, whence=0):
+    self._check_open()
+    currentpos = self._pos + self._output.tell()
+    currentlen = self._pos + len(self._output.getvalue())
+    if whence == 0:
+      newpos = offset
+    elif whence == 1:
+      newpos = currentpos + offset
+    elif whence == 2:
+      newpos = currentlen + offset
+    else:
+      raise ValueError, "Bad 'whence' argument to seek()"
+    if newpos == currentpos:
+      return
+    elif newpos < self._pos:
+      raise ValueError, "Cannot seek backwards into already-sent data"
+    elif newpos <= currentlen:
+      self._output.seek(newpos - self._pos)
+    else:
+      if self._bufferOutput:
+        self._output.seek(newpos - self._pos)
+      else:
+        self._write("\0" * (newpos - self._pos))
 
   def _mergevars(self, encoded):
     """Parse variable-value pairs from a URL-encoded string."""
