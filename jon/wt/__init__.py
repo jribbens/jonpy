@@ -174,3 +174,7 @@ class Handler(cgi.Handler):
     else:
       obj.main(open(self.template, "rb").read())
     self.post_request(obj)
+
+
+class DebugHandler(cgi.DebugHandlerMixIn, Handler):
+  pass
