@@ -204,6 +204,16 @@ been enabled using
 will not be sent to the client immediately but will be buffered in memory.
 If buffering has not been enabled and the HTTP headers array has not already
 been sent then it will be sent before any other output.</p>
+<p>If you wish to be able to output unicode objects using this function, then
+you should wrap the <code><a href="#request">Request</a></code> object in a
+unicode <code>StreamWriter</code>. For example:</p>
+<p class="code"><code>import codecs<br />
+class Handler(cgi.Handler):<br />
+&nbsp;&nbsp;def process(self, req):<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<strong>req = codecs.getwriter("utf8")(req)</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.set_header("Content-Type", "text/plain; charset=utf8")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;msg = unicode("Hello\xa1", "iso-8859-1")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;req.write(msg)</code></p>
 
 <h4><a name="request:traceback" id="request:traceback"><code><strong>traceback(self)</strong></code></a></h4>
 <p>Calls <code><a href="#traceback">traceback</a></code> to send a traceback
