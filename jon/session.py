@@ -245,7 +245,57 @@ class FileSession(Session):
     Session.__init__(self, req, secret, **kwargs)
 
 
-class SQLSession(Session):
+class GenericSQLSession(Session):
+  def _create(self, secret):
+    while 1:
+      Session._create(self, secret)
+      self["hash"] = self._make_hash(self["id"], secret)
+      try:
+        self.dbc.execute("INSERT INTO %s (ID,hash,created,updated,data)"
+          " VALUES (%%s,%%s,%%s,%%s,%%s)" % (self.table,),
+          (self["id"], self["hash"], int(self.created), int(self.created),
+          pickle.dumps({}, 1)))
+        self.dbc.execute("COMMIT")
+      except self.dbc.IntegrityError:
+        pass
+      else:
+        break
+
+  def _load(self):
+    self.dbc.execute("SELECT created,data FROM %s WHERE ID=%%s" % (self.table,),
+      (self["id"],))
+    if self.dbc.rowcount == 0:
+      return 0
+    row = self.dbc.fetchone()
+    self.created = row[0]
+    self.update(pickle.loads(row[1]))
+    return 1
+
+  def save(self):
+    self.dbc.execute("UPDATE %s SET updated=%%s,data=%%s"
+      " WHERE ID=%%s" % (self.table,), (int(time.time()),
+      pickle.dumps(self.copy(), 1), self["id"]))
+    self.dbc.execute("COMMIT")
+
+  def tidy(dbc, table="sessions", max_idle=0, max_age=0):
+    now = time.time()
+    if max_idle:
+      dbc.execute("DELETE FROM %s WHERE updated < %%s" % (self.table,),
+        (now - max_idle,))
+    if max_age:
+      dbc.execute("DELETE FROM %s WHERE created < %%s" % (self.table,),
+        (now - max_age,))
+    if max_idle or max_age:
+      dbc.execute("COMMIT")
+  tidy = staticmethod(tidy)
+    
+  def __init__(self, req, secret, dbc, table="sessions", **kwargs):
+    self.dbc = dbc
+    self.table = table
+    Session.__init__(self, req, secret, **kwargs)
+
+
+class MySQLSession(GenericSQLSession):
   def _create(self, secret):
     self.dbc.execute("LOCK TABLES %s WRITE" % (self.table,))
     while 1:
@@ -276,22 +326,5 @@ class SQLSession(Session):
       " WHERE ID=%%s" % (self.table,), (int(time.time()),
       pickle.dumps(self.copy(), 1), long(self["id"], 16)))
 
-  def tidy(dbc, table="sessions", max_idle=0, max_age=0):
-    if not max_idle and not max_age:
-      return
-    q = "0=1"
-    v = []
-    now = time.time()
-    if max_idle:
-      q += " OR updated < %s"
-      v.append(now - max_idle)
-    if max_age:
-      q += " OR created < %s"
-      v.append(now - max_age)
-    dbc.execute("DELETE FROM %s WHERE %s" % (table, q), v)
-  tidy = staticmethod(tidy)
-    
-  def __init__(self, req, secret, dbc, table="sessions", **kwargs):
-    self.dbc = dbc
-    self.table = table
-    Session.__init__(self, req, secret, **kwargs)
+
+SQLSession = MySQLSession # backwards compatibility name
