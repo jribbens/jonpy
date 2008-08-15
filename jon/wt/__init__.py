@@ -157,6 +157,9 @@ class Handler(cgi.Handler):
   def get_template_encoding(self):
     return None
 
+  def pre_load(self):
+    pass
+
   def pre_request(self, obj):
     pass
 
@@ -165,8 +168,9 @@ class Handler(cgi.Handler):
 
   def process(self, req):
     self.req = req
-    self.template = self._get_template()
     self.etc = self._get_etc()
+    self.pre_load()
+    self.template = self._get_template()
     codefname = self._get_code()
     try:
       namespace = _code_cache[codefname]
