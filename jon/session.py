@@ -52,7 +52,7 @@ class Session(dict):
   tidy = staticmethod(tidy)
 
   def __init__(self, req, secret, cookie="jonsid", url=0, root="",
-    referer=None, sid=None, shash=None):
+    referer=None, sid=None, shash=None, secure=0, domain=None):
     dict.__init__(self)
     self["id"] = None
     self._req = req
@@ -114,6 +114,10 @@ class Session(dict):
         c = Cookie.SimpleCookie()
         c[cookie] = self["id"] + self["hash"]
         c[cookie]["path"] = root + "/"
+        if secure:
+          c[cookie]["secure"] = 1
+        if domain:
+          c[cookie]["domain"] = domain
         self._req.add_header("Set-Cookie", c[cookie].OutputString())
 
     # if using url-based sessions, redirect if necessary
