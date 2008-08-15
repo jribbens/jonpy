@@ -99,144 +99,18 @@ def _tb_encode(s):
 
 
 def traceback(req, html=0):
-  import traceback, time, types, linecache, inspect, repr
-  repr = repr.Repr()
-  repr.maxdict = 10
-  repr.maxlist = 10
-  repr.maxtuple = 10
-  repr.maxother = 200
-  repr.maxstring = 200
-  repr = repr.repr
-  (etype, evalue, etb) = sys.exc_info()
-  if type(etype) is types.ClassType:
-    etype = etype.__name__
+  import cgitb
   if html:
     try:
       req.clear_headers()
       req.clear_output()
       req.set_header("Content-Type", "text/html; charset=iso-8859-1")
     except SequencingError:
-      req.write("</font></font></font></script></object></blockquote></pre>"
-        "</table></table></table></table></table></table></font></font>")
-    req.write("""\
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>jonpy traceback: %s</title>
-<style type="text/css"><!--
-BODY { background-color: #f0f0f8; font-family: helveta, arial, sans-serif }
-.tb_head { background-color: #6622aa; color: #ffffff }
-.tb_title { font-size: x-large }
-.tb_frame { background-color: #d8bbff }
-.tb_lineno { font-size: smaller }
-.tb_codehigh { background-color: #ffccee }
-.tb_code { color: #909090 }
-.tb_dump { color: #909090; font-size: smaller }
---></style>
-</head><body>
-<table width="100%%" cellspacing="0" cellpadding="0" border="0">
-<tr class="tb_head">
-<td valign="bottom" class="tb_title">&nbsp;<br /><strong>%s</strong></td>
-<td align="right" valign="bottom">%s<br />%s</td></tr></table>
-<p>A problem occurred in a Python script. Here is the sequence of
-function calls leading up to the error, with the most recent first.</p>
-""" % (_tb_encode(etype), _tb_encode(etype),
-      "Python %s: %s" % (sys.version.split()[0], sys.executable),
-      time.ctime(time.time())))
-  req.error("jonpy error: %s at %s\n" % (etype, time.ctime(time.time())))
-  # this code adapted from the standard cgitb module
-  # unfortunately we cannot use that module directly,
-  # mainly because it won't allow us to output to the log
-  if html:
-    req.write("<p><strong>%s</strong>: %s" % (_tb_encode(etype),
-      _tb_encode(evalue)))
-  req.error("%s: %s\n" % (etype, evalue))
-  #if type(evalue) is types.InstanceType:
-  #  for name in dir(evalue):
-  #    if html:
-  #      req.write("\n<br /><tt>&nbsp;&nbsp;&nbsp;&nbsp;</tt>%s&nbsp;= %s" %
-  #        (_tb_encode(name), _tb_encode(repr(getattr(evalue, name)))))
-  #    req.error("  %s = %s\n" % (name, repr(getattr(evalue, name))))
-  if html:
-    req.write("</p>\n")
-  frames = []
-  records = inspect.getinnerframes(etb, 7)
-  records.reverse()
-  for frame, fn, lnum, func, lines, index in records:
-    if html:
-      req.write("""\
-<table width="100%" cellspacing="0" cellpadding="0" border="0">""")
-    fn = fn and os.path.abspath(fn) or "?"
-    args, varargs, varkw, locls = inspect.getargvalues(frame)
-    if func != "?":
-      fav = inspect.formatargvalues(args, varargs, varkw, locls)
-      if html:
-        req.write("<tr><td class=\"tb_frame\">%s in <strong>%s</strong>%s</td>"
-          "</tr>\n" % (_tb_encode(fn), _tb_encode(func), _tb_encode(fav)))
-      req.error("%s in %s%s\n" % (fn, func, fav))
-    else:
-      if html:
-        req.write("<tr><td class=\"tb_head\">%s</td></tr>\n" %
-          (_tb_encode(fn),))
-      req.error("%s\n" % (fn,))
-    highlight = {}
-    def reader(lnum=[lnum]):
-      highlight[lnum[0]] = 1
-      try:
-        return linecache.getline(fn, lnum[0])
-      finally:
-        lnum[0] += 1
-    vrs = _scanvars(reader, frame, locls)
-    if index is not None:
-      i = lnum - index
-      for line in lines:
-        if html:
-          if i in highlight:
-            style = "tb_codehigh"
-          else:
-            style = "tb_code"
-          req.write("<tr><td class=\"%s\"><code><span class=\"tb_lineno\">"
-            "%s</span>&nbsp;%s</code></td></tr>\n" %
-            (style, "&nbsp;" * (5 - len(str(i))) + str(i), _tb_encode(line)))
-        req.error("%s %s" % (" " * (5-len(str(i))) + str(i), line))
-        i += 1
-    done = {}
-    dump = []
-    htdump = []
-    for name, where, value in vrs:
-      if name in done:
-        continue
-      done[name] = 1
-      if value is not __UNDEF__:
-        if where == "global":
-          dump.append("global %s = %s" % (name, repr(value)))
-          htdump.append("<em>global</em> <strong>%s</strong>&nbsp;= %s" %
-            (_tb_encode(name), _tb_encode(repr(value))))
-        elif where == "builtin":
-          dump.append("builtin %s = %s" % (name, repr(value)))
-          htdump.append("<em>builtin</em> <strong>%s</strong>&nbsp;= %s" %
-            (_tb_encode(name), _tb_encode(repr(value))))
-        elif where == "local":
-          dump.append("%s = %s" % (name, repr(value)))
-          htdump.append("<strong>%s</strong>&nbsp;= %s" %
-            (_tb_encode(name), _tb_encode(repr(value))))
-        else:
-          dump.append("%s%s = %s" % (where, name.split(".")[-1], repr(value)))
-          htdump.append("%s<strong>%s</strong>&nbsp;= %s" %
-            (_tb_encode(where), _tb_encode(name.split(".")[-1]),
-            _tb_encode(repr(value))))
-      else:
-        dump.append("%s undefined" % (name,))
-        htdump.append("%s <em>undefined</em>" % (_tb_encode(name,)))
-    if html:
-      req.write("<tr><td class=\"tb_dump\">%s</td></tr>\n" %
-        (", ".join(htdump),))
-    req.error(", ".join(dump) + "\n")
-    if html:
-      req.write("</table>\n")
-  if html:
-    req.write("</body></html>\n")
-  linecache.clearcache()
+      pass
+    cgitb.Hook(file=req)(*sys.exc_info())
+  s = StringIO.StringIO()
+  cgitb.Hook(file=s, format="text")(*sys.exc_info())
+  req.error(s.getvalue())
 
 
 class Request(object):
@@ -643,6 +517,9 @@ class CGIRequest(Request):
 
   def error(self, s):
     self.__err.write(s)
+
+  def _close(self):
+    self.__out.close()
 
   def _write(self, s):
     if not self.aborted:
