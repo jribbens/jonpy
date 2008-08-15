@@ -230,6 +230,12 @@ file will be assumed to be using the specified character encoding and the
 a <code>unicode</code> string instead of a normal string. The default
 implementation returns <code>None</code>.</p>
 
+<h4><a name="handler:pre_load" id="handler:pre_load"><code><strong>pre_load(self)</strong></code></a></h4>
+<p>This method may be overridden by subclasses. Its default implementation does
+nothing. It is called before the template is located or the page code loaded.
+<code>self.<a href="#handler:req">req</a></code> and
+<code>self.<a href="#handler:etc">etc</a></code> are available.</p>
+
 <h4><a name="handler:pre_request" id="handler:pre_request"><code><strong>pre_request(self, obj)</strong></code></a></h4>
 <p><code><strong>obj</strong></code>:
 <code>wt.<a href="#templatecode">TemplateCode</a></code> instance</p>
