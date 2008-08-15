@@ -99,6 +99,7 @@ def _tb_encode(s):
 
 
 def traceback(req, html=0):
+  exc = sys.exc_info()
   import cgitb
   if html:
     try:
@@ -107,9 +108,9 @@ def traceback(req, html=0):
       req.set_header("Content-Type", "text/html; charset=iso-8859-1")
     except SequencingError:
       pass
-    cgitb.Hook(file=req)(*sys.exc_info())
+    cgitb.Hook(file=req)(*exc)
   s = StringIO.StringIO()
-  cgitb.Hook(file=s, format="text")(*sys.exc_info())
+  cgitb.Hook(file=s, format="text")(*exc)
   req.error(s.getvalue())
 
 
