@@ -284,10 +284,10 @@ class GenericSQLSession(Session):
   def tidy(dbc, table="sessions", max_idle=0, max_age=0):
     now = time.time()
     if max_idle:
-      dbc.execute("DELETE FROM %s WHERE updated < %%s" % (self.table,),
+      dbc.execute("DELETE FROM %s WHERE updated < %%s" % (table,),
         (now - max_idle,))
     if max_age:
-      dbc.execute("DELETE FROM %s WHERE created < %%s" % (self.table,),
+      dbc.execute("DELETE FROM %s WHERE created < %%s" % (table,),
         (now - max_age,))
     if max_idle or max_age:
       dbc.execute("COMMIT")
