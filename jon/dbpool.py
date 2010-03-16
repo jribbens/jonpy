@@ -15,20 +15,20 @@ _refs = {}
 
 def set_database(dbmod, minconns):
   if minconns < 1:
-    raise ValueError, "minconns must be greater than or equal to 1"
+    raise ValueError("minconns must be greater than or equal to 1")
   if _dbmod is not None:
     if _dbmod == dbmod:
       return
-    raise Exception, "dbpool module is already in use"
+    raise Exception("dbpool module is already in use")
   copy = ("paramstyle", "Warning", "Error", "InterfaceError", "DatabaseError",
     "DataError", "OperationalError", "IntegrityError", "InternalError",
     "ProgrammingError", "NotSupportedError")
   if len(dbmod.apilevel) != 3 or dbmod.apilevel[:2] != "2." or \
     not dbmod.apilevel[2].isdigit():
-    raise ValueError, "specified database module is not DB API 2.0 compliant"
+    raise ValueError("specified database module is not DB API 2.0 compliant")
   if dbmod.threadsafety < 1:
-    raise ValueError, "specified database module must have threadsafety level" \
-      " of at least 1"
+    raise ValueError("specified database module must have threadsafety level"
+      " of at least 1")
   g = globals()
   g["_dbmod"] = dbmod
   g["_available"] = {}
@@ -39,9 +39,9 @@ def set_database(dbmod, minconns):
 
 def connect(*args, **kwargs):
   if _dbmod is None:
-    raise Exception, "No database module has been specified"
+    raise Exception("No database module has been specified")
   try:
-    return _available[`args` + "\0" + `kwargs`].get(0)
+    return _available[repr(args) + "\0" + repr(kwargs)].get(0)
   except (KeyError, _Queue.Empty):
     return _Connection(None, None, *args, **kwargs)
 
@@ -50,11 +50,11 @@ def _make_available(conn):
   _lock.acquire()
   try:
     try:
-      _available[`conn._args` + "\0" + `conn._kwargs`].put(conn, 0)
+      _available[repr(conn._args) + "\0" + repr(conn._kwargs)].put(conn, 0)
     except KeyError:
       q = _Queue.Queue(_minconns)
       q.put(conn, 0)
-      _available[`conn._args` + "\0" + `conn._kwargs`] = q
+      _available[repr(conn._args) + "\0" + repr(conn._kwargs)] = q
     except _Queue.Full:
       pass
   finally:
