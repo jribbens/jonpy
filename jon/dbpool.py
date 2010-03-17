@@ -3,6 +3,7 @@
 import weakref as _weakref
 import Queue as _Queue
 import thread as _thread
+import time as _time
 
 
 apilevel = "2.0"
@@ -12,17 +13,18 @@ _dbmod = None
 _lock = _thread.allocate_lock()
 _refs = {}
 
+_COPY_ATTRS = ("paramstyle", "Warning", "Error", "InterfaceError",
+  "DatabaseError", "DataError", "OperationalError", "IntegrityError",
+  "InternalError", "ProgrammingError", "NotSupportedError")
 
-def set_database(dbmod, minconns):
+
+def set_database(dbmod, minconns, timeout=0):
   if minconns < 1:
     raise ValueError("minconns must be greater than or equal to 1")
   if _dbmod is not None:
     if _dbmod == dbmod:
       return
     raise Exception("dbpool module is already in use")
-  copy = ("paramstyle", "Warning", "Error", "InterfaceError", "DatabaseError",
-    "DataError", "OperationalError", "IntegrityError", "InternalError",
-    "ProgrammingError", "NotSupportedError")
   if len(dbmod.apilevel) != 3 or dbmod.apilevel[:2] != "2." or \
     not dbmod.apilevel[2].isdigit():
     raise ValueError("specified database module is not DB API 2.0 compliant")
@@ -33,28 +35,34 @@ def set_database(dbmod, minconns):
   g["_dbmod"] = dbmod
   g["_available"] = {}
   g["_minconns"] = minconns
-  for v in copy:
+  g["_timeout"] = timeout
+  for v in _COPY_ATTRS:
     g[v] = getattr(dbmod, v)
 
 
 def connect(*args, **kwargs):
   if _dbmod is None:
     raise Exception("No database module has been specified")
+  key = repr(args) + "\0" + repr(kwargs)
   try:
-    return _available[repr(args) + "\0" + repr(kwargs)].get(0)
+    while True:
+      conn = _available[key].get(0)
+      if _timeout == 0 or _time.time() - conn._lastuse < _timeout:
+        return conn
   except (KeyError, _Queue.Empty):
     return _Connection(None, None, *args, **kwargs)
 
 
 def _make_available(conn):
+  key = repr(conn._args) + "\0" + repr(conn._kwargs)
   _lock.acquire()
   try:
     try:
-      _available[repr(conn._args) + "\0" + repr(conn._kwargs)].put(conn, 0)
+      _available[key].put(conn, 0)
     except KeyError:
       q = _Queue.Queue(_minconns)
       q.put(conn, 0)
-      _available[repr(conn._args) + "\0" + repr(conn._kwargs)] = q
+      _available[key] = q
     except _Queue.Full:
       pass
   finally:
@@ -72,7 +80,7 @@ def _connection_notinuse(ref):
       _make_available(_Connection(inner))
 
 
-class _Connection:
+class _Connection(object):
   def __init__(self, inner, *args, **kwargs):
     if inner is None:
       self._inner = _InnerConnection(*args, **kwargs)
@@ -96,7 +104,7 @@ class _Connection:
     return getattr(self._inner, attr)
 
     
-class _InnerConnection:
+class _InnerConnection(object):
   def __init__(self, connection, *args, **kwargs):
     self._args = args
     self._kwargs = kwargs
@@ -107,6 +115,7 @@ class _InnerConnection:
     self._cursorref = None
     self._outerref = None
     self._lock = _thread.allocate_lock()
+    self._lastuse = _time.time()
 
   def close(self):
     if self._cursorref is not None:
@@ -128,13 +137,14 @@ class _InnerConnection:
       if self._cursorref is None or self._cursorref() is None:
         c = _Cursor(self, *args, **kwargs)
         self._cursorref = _weakref.ref(c)
+        self._lastuse = _time.time()
         return c
     finally:
       self._lock.release()
     return connect(*self._args, **self._kwargs).cursor(*args, **kwargs)
 
 
-class _Cursor:
+class _Cursor(object):
   def __init__(self, connection, *args, **kwargs):
     self._connection = connection
     self._outer = connection._outerref()
