@@ -1,6 +1,13 @@
 # $Id$
 
-import time, hmac, sha, Cookie, re, random, os, errno, fcntl
+import time, hmac, Cookie, re, random, os, errno, fcntl
+try:
+  import hashlib
+  sha = hashlib.sha1
+  shanew = hashlib.sha1
+except ImportError:
+  import sha
+  shanew = sha.new
 try:
   import cPickle as pickle
 except ImportError:
@@ -31,7 +38,7 @@ class Session(dict):
     """
     rnd = str(time.time()) + str(random.random()) + \
       str(self._req.environ.get("UNIQUE_ID"))
-    self["id"] = sha.new(rnd).hexdigest()[:8]
+    self["id"] = shanew(rnd).hexdigest()[:8]
 
   def _load(self):
     """Load the session dictionary from somewhere
@@ -237,7 +244,7 @@ class FileSession(Session):
     try:
       st = os.lstat(basedir)
       if st[4] != os.getuid():
-        raise Error, "Sessions basedir is not owned by user %d" % os.getuid()
+        raise Error("Sessions basedir is not owned by user %d" % os.getuid())
     except OSError, x:
       if x[0] == errno.ENOENT:
         os.mkdir(basedir, 0700)

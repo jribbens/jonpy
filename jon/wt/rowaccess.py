@@ -9,4 +9,4 @@ class RowAccess(wt.TemplateCode):
     try:
       return getattr(self, self.rowaccess_attrib)[name]
     except KeyError:
-      raise AttributeError, name
+      raise AttributeError(name)

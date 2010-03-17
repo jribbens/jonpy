@@ -40,13 +40,13 @@ def _sockread(sock, length):
   while length > 0:
     newdata = sock.recv(length)
     if not newdata:
-      raise EOFError, "End-of-file reading socket"
+      raise EOFError("End-of-file reading socket")
     data += newdata
     length -= len(newdata)
   return data
 
 
-class Record:
+class Record(object):
   def __init__(self, insock=None):
     if insock:
       data = _sockread(insock, 8)
@@ -64,7 +64,7 @@ class Record:
       "\x00" * padding_length
 
 
-class NameValueData:
+class NameValueData(object):
   def __init__(self, data=""):
     self.values = []
     pos = 0
@@ -82,7 +82,7 @@ class NameValueData:
         value_length = ord(data[pos])
         pos += 1
       if pos + name_length + value_length > len(data):
-        raise ValueError, "Unexpected end-of-data in NameValueRecord"
+        raise ValueError("Unexpected end-of-data in NameValueRecord")
       self.values.append((data[pos:pos+name_length],
         data[pos+name_length:pos+name_length+value_length]))
       pos += name_length + value_length
@@ -133,7 +133,7 @@ class InputStream(fakefile.FakeInput):
     return self.data.pop(0)
 
 
-class Connection:
+class Connection(object):
   def __init__(self, socket, handler_types, request_type, params,
     threading_level):
     self.socket = socket
@@ -208,7 +208,7 @@ class Connection:
           raise
       if rec.type == FCGI_GET_VALUES:
         data = NameValueData(rec.content_data)
-        self.log(3, 0, "FCGI_GET_VALUES: %s" % `data.values`)
+        self.log(3, 0, "FCGI_GET_VALUES: %s" % repr(data.values))
         reply = Record()
         reply.type = FCGI_GET_VALUES_RESULT
         reply.request_id = 0
@@ -263,7 +263,7 @@ class Connection:
         if req:
           if rec.content_data:
             data = NameValueData(rec.content_data)
-            self.log(3, rec.request_id, "FCGI_PARAMS: %s" % `data.values`)
+            self.log(3, rec.request_id, "FCGI_PARAMS: %s" % repr(data.values))
             for nameval in data.values:
               req.environ[nameval[0]] = nameval[1]
           else:
@@ -287,7 +287,8 @@ class Connection:
         req = self.requests.get(rec.request_id)
         if req:
           if log_level >= 4:
-            self.log(4, rec.request_id, "FCGI_STDIN: %s" % `rec.content_data`)
+            self.log(4, rec.request_id, "FCGI_STDIN: %s"
+              % repr(rec.content_data))
           req.stdin.add_data(rec.content_data)
           if waitstream == "stdin":
             return
@@ -297,7 +298,8 @@ class Connection:
         req = self.requests.get(rec.request_id)
         if req:
           if log_level >= 4:
-            self.log(4, rec.request_id, "FCGI_DATA: %s" % `rec.content_data`)
+            self.log(4, rec.request_id, "FCGI_DATA: %s"
+              % repr(rec.content_data))
           req.fcgi_data.add_data(rec.content_data)
           if waitstream == "fcgi_data":
             return
@@ -380,12 +382,12 @@ class Request(cgi.Request):
 
   def _write(self, s):
     if log_level >= 4:
-      self.log(4, "FCGI_STDOUT: %s" % `s`)
+      self.log(4, "FCGI_STDOUT: %s" % repr(s))
     self._recwrite(FCGI_STDOUT, s)
 
   def error(self, s):
     if log_level >= 4:
-      self.log(4, "FCGI_STDERR: %s" % `s`)
+      self.log(4, "FCGI_STDERR: %s" % repr(s))
     self._recwrite(FCGI_STDERR, s)
     self._stderr_used = 1
 
@@ -418,7 +420,7 @@ class GZipRequest(cgi.GZipMixIn, Request):
   _fcgi_fallback_type = cgi.GZipCGIRequest
 
 
-class Server:
+class Server(object):
   def __init__(self, handler_types, max_requests=0, params=None,
     request_type=Request, threading_level=1):
     self.handler_types = handler_types
@@ -447,7 +449,7 @@ class Server:
       web_server_addrs = os.environ["FCGI_WEB_SERVER_ADDRS"].split(",")
     else:
       web_server_addrs = None
-    self.log(1, "web_server_addrs = %s" % `web_server_addrs`)
+    self.log(1, "web_server_addrs = %s" % repr(web_server_addrs))
     self._sock = socket.fromfd(sys.stdin.fileno(), socket.AF_INET,
       socket.SOCK_STREAM)
     try:
@@ -474,7 +476,7 @@ class Server:
           break
         raise
       self.log(1, "accepted connection %d from %s" %
-        (newsock.fileno(), `addr`))
+        (newsock.fileno(), repr(addr)))
       if web_server_addrs and (len(addr) != 2 or \
         addr[0] not in web_server_addrs):
         self.log(1, "not in web_server_addrs - rejected")

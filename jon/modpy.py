@@ -39,7 +39,7 @@ class Request(cgi.Request):
 
   def output_headers(self):
     if self._doneHeaders:
-      raise cgi.SequencingError, "output_headers() called twice"
+      raise cgi.SequencingError("output_headers() called twice")
     if self._redirected:
       self._modpy_req.status = apache.HTTP_MOVED_TEMPORARILY
     self._modpy_req.send_http_header()
@@ -47,15 +47,15 @@ class Request(cgi.Request):
 
   def clear_headers(self):
     if self._doneHeaders:
-      raise cgi.SequencingError, "cannot clear_headers() after output_headers()"
+      raise cgi.SequencingError("cannot clear_headers() after output_headers()")
     for key in self._modpy_req.headers_out.keys():
       del self._modpy_req.headers_out[key]
     self._redirected = 0
 
   def add_header(self, hdr, val):
     if self._doneHeaders:
-      raise cgi.SequencingError, \
-        "cannot add_header(%s) after output_headers()" % `hdr`
+      raise cgi.SequencingError(
+        "cannot add_header(%s) after output_headers()" % repr(hdr))
     if hdr.lower() == "content-type":
       self._modpy_req.content_type = val
     else:
@@ -65,8 +65,8 @@ class Request(cgi.Request):
 
   def set_header(self, hdr, val):
     if self._doneHeaders:
-      raise cgi.SequencingError, \
-        "cannot set_header(%s) after output_headers()" % `hdr`
+      raise cgi.SequencingError(
+        "cannot set_header(%s) after output_headers()" % repr(hdr))
     if hdr.lower() == "content-type":
       self._modpy_req.content_type = val
     else:
@@ -88,10 +88,10 @@ class Request(cgi.Request):
 
   def del_header(self, hdr, val):
     if self._doneHeaders:
-      raise cgi.SequencingError, \
-        "cannot del_header(%s) after output_headers()" % `hdr`
+      raise cgi.SequencingError(
+        "cannot del_header(%s) after output_headers()" % repr(hdr))
     if hdr.lower() == "content-Type":
-      raise Error, "cannot del_header(\"Content-Type\")"
+      raise Error("cannot del_header(\"Content-Type\")")
     del self._modpy_req.headers_out[hdr]
     if hdr.lower() == "location":
       self._redirected = 0

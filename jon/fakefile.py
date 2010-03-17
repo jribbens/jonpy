@@ -1,7 +1,7 @@
 # $Id$
 
 
-class FakeInput:
+class FakeInput(object):
   name = "<fake input stream>"
 
   def __init__(self):
@@ -19,7 +19,7 @@ class FakeInput:
 
   def _check_open(self):
     if self.closed:
-      raise IOError, "File is closed"
+      raise IOError("File is closed")
 
   def flush(self):
     self._check_open()
@@ -82,16 +82,16 @@ class FakeInput:
     return xreadlines.xreadlines(self)
 
   def seek(self, offset, whence=0):
-    raise IOError, "cannot seek()"
+    raise IOError("cannot seek()")
 
   def tell(self):
-    raise IOError, "cannot tell()"
+    raise IOError("cannot tell()")
 
   def truncate(self):
-    raise IOError, "cannot truncate()"
+    raise IOError("cannot truncate()")
   
   def write(self, s):
-    raise IOError, "cannot write()"
+    raise IOError("cannot write()")
 
   def writelines(self, s):
-    raise IOError, "cannot writelines()"
+    raise IOError("cannot writelines()")

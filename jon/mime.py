@@ -43,7 +43,7 @@ class Entity(rfc822.Message):
         while 1:
           end = bre.search(msg, start)
           if not end:
-            raise Error, "End boundary not found in multipart"
+            raise Error("End boundary not found in multipart")
           if end.group(1) is not None or end.start() == 0 and start == 0:
             break
         if start == 0:
@@ -69,7 +69,7 @@ def parse_content_disposition(s):
   # skip whitespace before disposition
   while i < len(s) and s[i] in _whitespace: i+= 1
   if i >= len(s):
-    raise Error, "Unexpected end of string before disposition"
+    raise Error("Unexpected end of string before disposition")
   # disposition
   disposition = ""
   while i < len(s) and s[i] in _tokenchars:
@@ -79,7 +79,7 @@ def parse_content_disposition(s):
   if i >= len(s):
     return (disposition, {})
   if s[i] != ';':
-    raise Error, "Unexpected character %s in disposition" % `s[i]`
+    raise Error("Unexpected character %s in disposition" % repr(s[i]))
   i+= 1
   return (disposition, parse_params(s[i:]))
     
@@ -89,17 +89,17 @@ def parse_content_type(s):
   # skip whitespace before type "/" subtype
   while i < len(s) and s[i] in _whitespace: i+= 1
   if i >= len(s):
-    raise Error, "Unexpected end of string before type"
+    raise Error("Unexpected end of string before type")
   # type
   content_type = ""
   while i < len(s) and s[i] in _tokenchars:
     content_type += s[i]
     i+= 1
   if i >= len(s):
-    raise Error, "Unexpected end of string in type"
+    raise Error("Unexpected end of string in type")
   # "/"
   if s[i] != "/":
-    raise Error, "Unexpected character %s in type" % `s[i]`
+    raise Error("Unexpected character %s in type" % repr(s[i]))
   content_type += "/"
   i+= 1
   # subtype
@@ -110,7 +110,7 @@ def parse_content_type(s):
   if i >= len(s):
     return (content_type, {})
   if s[i] != ';':
-    raise Error, "Unexpected character %s in subtype" % `s[i]`
+    raise Error("Unexpected character %s in subtype" % repr(s[i]))
   i+= 1
   return (content_type, parse_params(s[i:]))
 
@@ -128,13 +128,13 @@ def parse_params(s):
       attribute += s[i]
       i+= 1
     if i >= len(s):
-      raise Error, "Unexpected end of string in attribute"
+      raise Error("Unexpected end of string in attribute")
     # now we should have an equals sign
     if s[i] != "=":
-      raise Error, "Unexpected character %s in attribute" % `s[i]`
+      raise Error("Unexpected character %s in attribute" % repr(s[i]))
     i+= 1
     if i >= len(s):
-      raise Error, "Unexpected end of string after '='"
+      raise Error("Unexpected end of string after '='")
     # now we should have the value - either a token or a quoted-string
     value = ""
     if s[i] != '"':
@@ -147,13 +147,13 @@ def parse_params(s):
       i+= 1
       while 1:
         if i >= len(s):
-          raise Error, "Unexpected end of string in quoted-string"
+          raise Error("Unexpected end of string in quoted-string")
         if s[i] == '"':
           break
         if i == "\\":
           i+= 1
           if i >= len(s):
-            raise Error, "Unexpected end of string in quoted-pair"
+            raise Error("Unexpected end of string in quoted-pair")
         value += s[i]
         i+= 1
       i+= 1
@@ -162,7 +162,7 @@ def parse_params(s):
     if i >= len(s):
       break
     if s[i] != ";":
-      raise Error, "Unexpected character %s after parameter" % `s[i]`
+      raise Error("Unexpected character %s after parameter" % repr(s[i]))
     i+= 1
   return params
 
@@ -180,4 +180,4 @@ def decode(encoding, s):
     import base64
     return base64.decodestring(s)
   else:
-    raise Error, "Unknown encoding %s" % `encoding`
+    raise Error("Unknown encoding %s" % repr(encoding))
