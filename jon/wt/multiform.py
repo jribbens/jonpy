@@ -146,7 +146,7 @@ class Stage(wt.TemplateCode):
     class errors(wt.TemplateCode):
       class error(wt.TemplateCode):
         def main(self, template):
-          for self.error in self.outer.outer.outer.errors:
+          for self.error in self.outer.outer.outer.outer.errors:
             self.process(template)
     class noerrors(wt.TemplateCode):
       pass
