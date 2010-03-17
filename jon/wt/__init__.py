@@ -38,7 +38,7 @@ def replace(wt, template, namespace):
           encode = cgi.url_encode
           chunk = chunk[1:]
         if not _replace_validchunk.match(chunk):
-          raise ValueError, "'%s' is not a valid identifier" % chunk
+          raise ValueError("'%s' is not a valid identifier" % chunk)
         if callable(getattr(namespace, chunk)):
           out = getattr(namespace, chunk)()
         else:
@@ -48,7 +48,7 @@ def replace(wt, template, namespace):
         wt.req.write(encode(out))
 
 
-class TemplateCode:
+class TemplateCode(object):
   template_as_file = 0
 
   def __init__(self, outer, wt=None):
@@ -116,7 +116,7 @@ def process(wt, template, namespace, selected=None):
       endmark = "<!--wt:/%s-->" % name
       end = template.find(endmark, start.end())
       if end == -1:
-        raise ValueError, "No end block for %s" % name
+        raise ValueError("No end block for %s" % name)
     replace(wt, template[pos:start.start()], namespace)
     if name != "_null" and (selected == None or selected == name or
       (type(selected) == type([]) and name in selected) or
@@ -140,7 +140,7 @@ class Handler(cgi.Handler):
       template = self.req.environ.get("REDIRECT_" * i + "WT_TEMPLATE_FILENAME")
       if template:
         return template
-    raise Exception, "Couldn't determine template filename"
+    raise Exception("Couldn't determine template filename")
 
   def _get_etc(self):
     sp = os.path.split(self.req.environ["DOCUMENT_ROOT"])

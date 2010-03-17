@@ -149,8 +149,8 @@ class Request(object):
       self.params = {}
       self._read_cgi_data(self.environ, self.stdin)
       return self.__dict__["params"]
-    raise AttributeError, "%s instance has no attribute %s" % \
-      (self.__class__.__name__, `name`)
+    raise AttributeError("%s instance has no attribute %s" %
+      (self.__class__.__name__, repr(name)))
 
   def close(self):
     """Closes the output stream."""
@@ -161,13 +161,13 @@ class Request(object):
 
   def _check_open(self):
     if self.closed:
-      raise ValueError, "I/O operation on closed file"
+      raise ValueError("I/O operation on closed file")
 
   def output_headers(self):
     """Output the list of headers."""
     self._check_open()
     if self._doneHeaders:
-      raise SequencingError, "output_headers() called twice"
+      raise SequencingError("output_headers() called twice")
     for pair in self._headers:
       self._write("%s: %s\r\n" % pair)
     self._write("\r\n")
@@ -177,23 +177,23 @@ class Request(object):
     """Clear the list of headers."""
     self._check_open()
     if self._doneHeaders:
-      raise SequencingError, "cannot clear_headers() after output_headers()"
+      raise SequencingError("cannot clear_headers() after output_headers()")
     self._headers = []
 
   def add_header(self, hdr, val):
     """Add a header to the list of headers."""
     self._check_open()
     if self._doneHeaders:
-      raise SequencingError, \
-        "cannot add_header(%s) after output_headers()" % `hdr`
+      raise SequencingError(
+        "cannot add_header(%s) after output_headers()" % repr(hdr))
     self._headers.append((hdr, val))
 
   def set_header(self, hdr, val):
     """Add a header to the list of headers, replacing any existing values."""
     self._check_open()
     if self._doneHeaders:
-      raise SequencingError, \
-        "cannot set_header(%s) after output_headers()" % `hdr`
+      raise SequencingError(
+        "cannot set_header(%s) after output_headers()" % repr(hdr))
     self.del_header(hdr)
     self._headers.append((hdr, val))
 
@@ -212,8 +212,8 @@ class Request(object):
     """Removes all values for a header from the list of headers."""
     self._check_open()
     if self._doneHeaders:
-      raise SequencingError, \
-        "cannot del_header(%s) after output_headers()" % `hdr`
+      raise SequencingError(
+        "cannot del_header(%s) after output_headers()" % repr(hdr))
     hdr = hdr.lower()
     while 1:
       for s in self._headers:
@@ -253,7 +253,7 @@ class Request(object):
     """Discards the contents of the body output buffer."""
     self._check_open()
     if not self._bufferOutput:
-      raise SequencingError, "cannot clear output when not buffering"
+      raise SequencingError("cannot clear output when not buffering")
     self._output.seek(0, 0)
     self._output.truncate()
 
@@ -263,12 +263,12 @@ class Request(object):
     go to the client.
     
     Must be overridden by the sub-class."""
-    raise NotImplementedError, "error must be overridden"
+    raise NotImplementedError("error must be overridden")
 
   def _write(self, s):
     """Sends some data to the client."""
     """Must be overridden by the sub-class."""
-    raise NotImplementedError, "_write must be overridden"
+    raise NotImplementedError("_write must be overridden")
 
   def _flush(self):
     """Flushes data to the client."""
@@ -314,11 +314,11 @@ class Request(object):
     elif whence == 2:
       newpos = currentlen + offset
     else:
-      raise ValueError, "Bad 'whence' argument to seek()"
+      raise ValueError("Bad 'whence' argument to seek()")
     if newpos == currentpos:
       return
     elif newpos < self._pos:
-      raise ValueError, "Cannot seek backwards into already-sent data"
+      raise ValueError("Cannot seek backwards into already-sent data")
     elif newpos <= currentlen:
       self._output.seek(newpos - self._pos)
     else:
@@ -424,7 +424,7 @@ class GZipMixIn(object):
       import struct
       super(GZipMixIn, self)._write(self._gzip.flush(self._gzip_zlib.Z_FINISH))
       super(GZipMixIn, self)._write(
-        struct.pack("<II", self._gzip_crc, self._gzip_length))
+        struct.pack("<II", self._gzip_crc & 0xffffffff, self._gzip_length))
       super(GZipMixIn, self)._flush()
       self._gzip = None
     super(GZipMixIn, self)._close()
@@ -434,7 +434,7 @@ class GZipMixIn(object):
     if self._gzip_level == level:
       return
     if self._doneHeaders:
-      raise SequencingError, "Cannot adjust compression - headers already sent"
+      raise SequencingError("Cannot adjust compression - headers already sent")
     self._gzip_level = level
 
   def _write(self, s):
@@ -551,7 +551,7 @@ class Handler(object):
   """Handle a request."""
   def process(self, req):
     """Handle a request. req is a Request object."""
-    raise NotImplementedError, "handler process function must be overridden"
+    raise NotImplementedError("handler process function must be overridden")
 
   def traceback(self, req):
     """Display a traceback, req is a Request object."""
