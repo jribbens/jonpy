@@ -27,12 +27,12 @@ the <code>close</code> function or all references to the connection are
 deleted), the physical connection is returned to the pool to be used the next
 time a connection is requested. If the pool is full (i.e. the limit set in the
 call to <code><a href="#set_database">set_database</a></code> is reached) then
-the phsyical database connection is closed.</p>
+the physical database connection is closed.</p>
 <p>Note that your code can either create one logical database connection, and
 then create many cursors from that, or create many logical database
 connections, and create one or more cursors from each of these. Either way the
 behaviour of the <code>dbpool</code> module will be the same - it will pool
-phsyical database connections, and only create one cursor per physical
+physical database connections, and only create one cursor per physical
 database connection.</p>
 <p>Example:</p>
 <p class="code"><code>import jon.dbpool as dbpool<br />
@@ -75,17 +75,25 @@ contain the value from the underlying database module.</p>
 are copied from the underlying database module.</p>
 
 <h3>Functions</h3>
-<h4><a name="set_database" id="set_database"><code><strong>set_database(dbmod, minconns)</strong></code></a></h4>
+<h4><a name="set_database" id="set_database"><code><strong>set_database(dbmod, minconns, timeout=0)</strong></code></a></h4>
 <p><code><strong>dbmod</strong></code>: module<br />
-<code><strong>minconns</strong></code>: integer</p>
+<code><strong>minconns</strong></code>: integer<br />
+<code><strong>timeout</strong></code>: integer</p>
 <p>Configures the <code>dbpool</code> module to act as a wrapper around the
 specified DB-API module. <code>dbmod</code> is a reference to the database
-module to use. <code>minconns</code> is an integer, which must be 1 or greater,
-which indicates the number of physical database connections of each 'type' to
-keep in the pool. Physical database connections are of the same 'type' if all
-the parameters to the DB-API <code>connect</code> function are the same (i.e.
-they are connecting to the same database, on the same host, with the same
-username, with the same options).</p>
+module to use. <code>minconns</code> is an integer, which must be
+<code>1</code> or greater, which indicates the number of physical database
+connections of each 'type' to keep in the pool. Physical database connections
+are of the same 'type' if all the parameters to the DB-API <code>connect</code>
+function are the same (i.e.  they are connecting to the same database, on the
+same host, with the same username, with the same options).</p>
+<p><code>timeout</code> is an integer, which must be <code>0</code> or greater,
+which indicates the maximum time in seconds that a connection is allowed to
+have sat idle before it will not be re-used. A value of <code>0</code> means
+that no timeout will be applied. This timeout is intended to prevent
+<code>dbpool</code> from re-using connections that the database server will
+have closed due a timeout on the server side, so a value that is less than
+the server-side timeout should be chosen.</p>
 <p>The database module to be used must have a <code>threadsafety</code> level
 of at least <code>1</code>, i.e. if the database cannot cope at all with
 multi-threading then there is nothing <code>dbpool</code> can do to make it
