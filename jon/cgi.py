@@ -139,7 +139,7 @@ class Request(object):
     except AttributeError:
       pass
     self.cookies = Cookie.SimpleCookie()
-    if self.environ.has_key("HTTP_COOKIE"):
+    if "HTTP_COOKIE" in self.environ:
       self.cookies.load(self.environ["HTTP_COOKIE"])
     self.aborted = 0
     self.set_header("Content-Type", "text/html; charset=iso-8859-1")
@@ -168,9 +168,8 @@ class Request(object):
     self._check_open()
     if self._doneHeaders:
       raise SequencingError("output_headers() called twice")
-    for pair in self._headers:
-      self._write("%s: %s\r\n" % pair)
-    self._write("\r\n")
+    self._write("".join(["%s: %s\r\n" % pair for pair in self._headers])
+      + "\r\n")
     self._doneHeaders = 1
 
   def clear_headers(self):
@@ -348,7 +347,7 @@ class Request(object):
       if name.endswith("!") or name.endswith("!*"):
         continue
       if name.endswith("*"):
-        if self.params.has_key(name):
+        if name in self.params:
           self.params[name].append(val)
         else:
           self.params[name] = [val]
@@ -373,7 +372,7 @@ class Request(object):
         continue
       name = entity.content_disposition[1].get("name")
       if name[-1:] == "*":
-        if self.params.has_key(name):
+        if name in self.params:
           if name[-2:-1] == "!":
             self.params[name].append(entity)
           else:
@@ -390,7 +389,7 @@ class Request(object):
 
   def _read_cgi_data(self, environ, inf):
     """Read input data from the client and set up the object attributes."""
-    if environ.has_key("QUERY_STRING"):
+    if "QUERY_STRING" in environ:
       self._mergevars(environ["QUERY_STRING"])
     if environ.get("REQUEST_METHOD") == "POST":
       if environ.get("CONTENT_TYPE", "").startswith("multipart/form-data"):
@@ -420,14 +419,15 @@ class GZipMixIn(object):
     super(GZipMixIn, self)._init()
 
   def _close(self):
+    parent = super(GZipMixIn, self)
     if self._gzip:
       import struct
-      super(GZipMixIn, self)._write(self._gzip.flush(self._gzip_zlib.Z_FINISH))
-      super(GZipMixIn, self)._write(
+      parent._write(self._gzip.flush(self._gzip_zlib.Z_FINISH))
+      parent._write(
         struct.pack("<II", self._gzip_crc & 0xffffffff, self._gzip_length))
-      super(GZipMixIn, self)._flush()
+      parent._flush()
       self._gzip = None
-    super(GZipMixIn, self)._close()
+    parent._close()
 
   def gzip_level(self, level=6):
     """Enable/disable gzip output compression."""
@@ -438,19 +438,21 @@ class GZipMixIn(object):
     self._gzip_level = level
 
   def _write(self, s):
+    parent = super(GZipMixIn, self)
     if not self._gzip:
-      super(GZipMixIn, self)._write(s)
+      parent._write(s)
       return
     self._gzip_crc = self._gzip_zlib.crc32(s, self._gzip_crc)
     self._gzip_length += len(s)
-    super(GZipMixIn, self)._write(self._gzip.compress(s))
+    parent._write(self._gzip.compress(s))
 
   def output_headers(self):
+    parent = super(GZipMixIn, self)
     if self._gzip_level == 0:
-      super(GZipMixIn, self).output_headers()
+      parent.output_headers()
       return
     gzip_ok = 0
-    if self.environ.has_key("HTTP_ACCEPT_ENCODING"):
+    if "HTTP_ACCEPT_ENCODING" in self.environ:
       encodings = [[a.strip() for a in x.split(";", 1)]
         for x in self.environ["HTTP_ACCEPT_ENCODING"].split(",")]
       for encoding in encodings:
@@ -474,22 +476,21 @@ class GZipMixIn(object):
           encoding += ", gzip"
         self.set_header("Content-Encoding", encoding)
         self.del_header("Content-Length")
-        super(GZipMixIn, self).output_headers()
+        parent.output_headers()
         self._gzip = zlib.compressobj(self._gzip_level, 8, -15)
         self._gzip_zlib = zlib
         self._gzip_crc = self._gzip_length = 0
-        super(GZipMixIn, self)._write(
-          "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03")
+        parent._write("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03")
         return
       except ImportError:
         pass
-    super(GZipMixIn, self).output_headers()
+    parent.output_headers()
 
   def _flush(self):
+    parent = super(GZipMixIn, self)
     if self._gzip:
-      super(GZipMixIn, self)._write(
-        self._gzip.flush(self._gzip_zlib.Z_SYNC_FLUSH))
-    super(GZipMixIn, self)._flush()
+      parent._write(self._gzip.flush(self._gzip_zlib.Z_SYNC_FLUSH))
+    parent._flush()
 
 
 class CGIRequest(Request):
