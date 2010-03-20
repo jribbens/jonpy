@@ -77,14 +77,14 @@ class Session(dict):
         if self["hash"] != self._make_hash(self["id"], secret):
           self["id"] = None
 
-    if cookie and self._req.cookies.has_key(cookie):
+    if cookie and cookie in self._req.cookies:
       self["id"] = self._req.cookies[cookie].value[:8]
       self["hash"] = self._req.cookies[cookie].value[8:]
       if self["hash"] != self._make_hash(self["id"], secret):
         self["id"] = None
 
     if url:
-      for i in xrange(1, 4):
+      for i in range(1, 4):
         requrl = self._req.environ.get("REDIRECT_" * i + "SESSION")
         if requrl:
           break
@@ -97,7 +97,7 @@ class Session(dict):
     # check the session
 
     if referer:
-      if self._req.environ.has_key("HTTP_REFERER"):
+      if "HTTP_REFERER" in self._req.environ:
         if self._req.environ["HTTP_REFERER"].find(referer) == -1:
           self["id"] = None
 
@@ -110,12 +110,12 @@ class Session(dict):
     # if no session was available and loaded, create a new one
 
     if self["id"] is None:
-      if self.has_key("hash"):
+      if "hash" in self:
         del self["hash"]
       self.created = time.time()
       self.new = 1
       self._create(secret)
-      if not self.has_key("hash"):
+      if "hash" not in self:
         self["hash"] = self._make_hash(self["id"], secret)
       if cookie:
         c = Cookie.SimpleCookie()

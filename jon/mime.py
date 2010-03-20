@@ -19,15 +19,15 @@ class Entity(rfc822.Message):
     del msg
     rfc822.Message.__init__(self, fp)
     del self.fp
-    self.mime = mime or self.has_key("MIME-Version")
+    self.mime = mime or ("MIME-Version" in self)
     if not self.mime:
       self.body = fp.read()
       return
-    if self.has_key("Content-Type"):
+    if "Content-Type" in self:
       self.content_type = parse_content_type(self["Content-Type"])
     else:
       self.content_type = None
-    if self.has_key("Content-Disposition"):
+    if "Content-Disposition" in self:
       self.content_disposition = \
         parse_content_disposition(self["Content-Disposition"])
     else:
