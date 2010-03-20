@@ -1,8 +1,12 @@
 # $Id$
 
-import cgi, fakefile, struct, socket, sys, errno, os, select
+import struct, socket, sys, errno, os, select
+import cgi, fakefile
 
 log_level = 0
+log_name = "/tmp/fcgi.log"
+log_file = None
+log_lock = None
 
 FCGI_LISTENSOCK_FILENO = 0
 FCGI_VERSION_1 = 1
@@ -30,20 +34,56 @@ FCGI_CANT_MPX_CONN = 1
 FCGI_OVERLOADED = 2
 FCGI_UNKNOWN_ROLE = 3
 
+_log_printable = "." * 32 + "".join(chr(c) for c in range(32, 127)) + "." * 129
+
+
+def _log(level, message, data=None):
+  global log_file
+
+  if log_level >= level:
+    import time
+    if data:
+      if not isinstance(data, str):
+        data = str(data)
+      data = data.translate(_log_printable)
+      pos = 0
+      while pos < len(data):
+        message += "\n  " + data[pos:pos+70]
+        pos += 70
+    if log_lock:
+      log_lock.acquire()
+    try:
+      if not log_file:
+        log_file = open(log_name, "a", 1)
+      log_file.write("%s %s\n" % (time.strftime("%b %d %H:%M:%S"), message))
+    finally:
+      if log_lock:
+        log_lock.release()
+
+
+def set_logging(level, filename=None):
+  global log_level, log_name
+
+  if filename and filename != log_name:
+    if log_file:
+      raise Exception("Cannot change the log filename after it's been opened")
+    log_name = filename
+  log_level = level
+
 
 # We shouldn't need this function, we should be able to just use socket.makefile
 # instead, but Solaris 2.7 appears to be so broken that stdio doesn't work when
 # you set the buffer size of a stream to zero.
 
 def _sockread(sock, length):
-  data = ""
+  data = []
   while length > 0:
     newdata = sock.recv(length)
     if not newdata:
       raise EOFError("End-of-file reading socket")
-    data += newdata
+    data.append(newdata)
     length -= len(newdata)
-  return data
+  return "".join(data)
 
 
 class Record(object):
@@ -87,19 +127,20 @@ class NameValueData(object):
         data[pos+name_length:pos+name_length+value_length]))
       pos += name_length + value_length
 
-  def encode_one(self, nameval):
-    if len(nameval[0]) > 127:
-      data = struct.pack("!I", len(nameval[0]) | (-0x7fffffff-1))
+  def encode_one(self, name, value):
+    if len(name) > 127:
+      namelen = struct.pack("!I", len(name) | (-0x7fffffff-1))
     else:
-      data = chr(len(nameval[0]))
-    if len(nameval[1]) > 127:
-      data += struct.pack("!I", len(nameval[1]) | (-0x7fffffff-1))
+      namelen = chr(len(name))
+    if len(value) > 127:
+      valuelen = struct.pack("!I", len(value) | (-0x7fffffff-1))
     else:
-      data += chr(len(nameval[1]))
-    return data + nameval[0] + nameval[1]
+      valuelen = chr(len(value))
+    return namelen + valuelen + name + value
 
   def encode(self):
-    return reduce(lambda x,y: x+y, map(self.encode_one, self.values), "")
+    return "".join([self.encode_one(name, value)
+      for name, value in self.values])
 
 
 class InputStream(fakefile.FakeInput):
@@ -148,12 +189,12 @@ class Connection(object):
     else:
       self.socketlock = None
 
-  def log(self, level, request_id, message):
+  def log(self, level, request_id, message, data=None):
     if log_level >= level:
       if request_id:
-        log_file.write("%3d/%3d %s\n" % (self.fileno, request_id, message))
+        _log(level, "%3d/%3d %s" % (self.fileno, request_id, message), data)
       else:
-        log_file.write("%3d     %s\n" % (self.fileno, message))
+        _log(level, "%3d     %s" % (self.fileno, message), data)
 
   def close(self):
     if self.socketlock is not None:
@@ -198,7 +239,7 @@ class Connection(object):
         rec = Record(self.socket)
       except:
         x = sys.exc_info()[1]
-        if isinstance(x, EOFError) or isinstance(x, ValueError) or \
+        if isinstance(x, (EOFError, ValueError)) or \
           (isinstance(x, socket.error) and x[0] == errno.EBADF):
           self.log(2, 0, "EOF received on connection")
           for req in self.requests.values():
@@ -208,7 +249,7 @@ class Connection(object):
           raise
       if rec.type == FCGI_GET_VALUES:
         data = NameValueData(rec.content_data)
-        self.log(3, 0, "FCGI_GET_VALUES: %s" % repr(data.values))
+        self.log(3, 0, "< FCGI_GET_VALUES", data.values)
         reply = Record()
         reply.type = FCGI_GET_VALUES_RESULT
         reply.request_id = 0
@@ -231,13 +272,14 @@ class Connection(object):
               reply_data.values.append(("FCGI_MPXS_CONNS", "0"))
             else:
               reply_data.values.append(("FCGI_MPXS_CONNS", "1"))
+        self.log(3, 0, "> FCGI_GET_VALUES_RESULT", reply_data.values)
         reply.content_data = reply_data.encode()
         self.write(reply)
       elif rec.type == FCGI_BEGIN_REQUEST:
         (role, flags) = struct.unpack("!HB", rec.content_data[:3])
         handler_type = self.handler_types.get(role)
         self.log(2, rec.request_id,
-          "FCGI_BEGIN_REQUEST: role = %d, flags = %d" % (role, flags))
+          "< FCGI_BEGIN_REQUEST: role = %d, flags = %d" % (role, flags))
         if not handler_type:
           self.log(2, rec.request_id, "no handler for this role, rejecting")
           reply = Record()
@@ -245,6 +287,7 @@ class Connection(object):
           reply.request_id = rec.request_id
           reply.content_data = struct.pack("!IBBBB",
             0, FCGI_UNKNOWN_ROLE, 0, 0, 0)
+          self.log(3, rec.request_id, "> FCGI_END_REQUEST: FCGI_UNKNOWN_ROLE")
           self.write(reply)
         elif waitstream is not None:
           self.log(2, rec.request_id, "already handling a request, rejecting")
@@ -253,6 +296,7 @@ class Connection(object):
           reply.request_id = rec.request_id
           reply.content_data = struct.pack("!IBBBB",
             0, FCGI_CANT_MPX_CONN, 0, 0, 0)
+          self.log(3, rec.request_id, "> FCGI_END_REQUEST: FCGI_CANT_MPX_CONN")
           self.write(reply)
         else:
           req = self.request_type(handler_type, self, rec.request_id, flags,
@@ -263,10 +307,11 @@ class Connection(object):
         if req:
           if rec.content_data:
             data = NameValueData(rec.content_data)
-            self.log(3, rec.request_id, "FCGI_PARAMS: %s" % repr(data.values))
+            self.log(3, rec.request_id, "< FCGI_PARAMS", data.values)
             for nameval in data.values:
               req.environ[nameval[0]] = nameval[1]
           else:
+            self.log(3, rec.request_id, "< FCGI_PARAMS: <empty>")
             if self.threading_level > 1:
               self.log(2, rec.request_id, "starting request thread")
               import thread
@@ -275,42 +320,45 @@ class Connection(object):
               self.log(2, rec.request_id, "executing request")
               req.run()
         else:
-          self.log(2, rec.request_id, "unknown request_id (FCGI_PARAMS)")
+          self.log(2, rec.request_id, "< FCGI_PARAMS: unknown request_id",
+            rec.content_data)
       elif rec.type == FCGI_ABORT_REQUEST:
         req = self.requests.get(rec.request_id)
         if req:
-          self.log(2, rec.request_id, "FCGI_ABORT_REQUEST")
+          self.log(2, rec.request_id, "< FCGI_ABORT_REQUEST")
           req.aborted = 1
         else:
-          self.log(2, rec.request_id, "unknown request_id (FCGI_ABORT_REQUEST)")
+          self.log(2, rec.request_id,
+            "< FCGI_ABORT_REQUEST: unknown request_id")
       elif rec.type == FCGI_STDIN:
         req = self.requests.get(rec.request_id)
         if req:
           if log_level >= 4:
-            self.log(4, rec.request_id, "FCGI_STDIN: %s"
-              % repr(rec.content_data))
+            self.log(4, rec.request_id, "< FCGI_STDIN", rec.content_data)
           req.stdin.add_data(rec.content_data)
           if waitstream == "stdin":
             return
         else:
-          self.log(2, rec.request_id, "unknown request_id (FCGI_STDIN)")
+          self.log(2, rec.request_id, "< FCGI_STDIN: unknown request_id",
+            rec.content_data)
       elif rec.type == FCGI_DATA:
         req = self.requests.get(rec.request_id)
         if req:
           if log_level >= 4:
-            self.log(4, rec.request_id, "FCGI_DATA: %s"
-              % repr(rec.content_data))
+            self.log(4, rec.request_id, "< FCGI_DATA", rec.content_data)
           req.fcgi_data.add_data(rec.content_data)
           if waitstream == "fcgi_data":
             return
         else:
-          self.log(2, rec.request_id, "unknown request_id (FCGI_DATA)")
+          self.log(2, rec.request_id, "< FCGI_DATA: unknown request_id",
+            rec.content_data)
       else:
-        self.log(2, rec.request_id, "unknown type %d" % rec.type)
+        self.log(2, rec.request_id, "< unknown type %d" % rec.type)
         reply = Record()
         reply.type = FCGI_UNKNOWN_TYPE
         reply.request_id = 0
         reply.content_data = chr(rec.type) + "\x00" * 7
+        self.log(3, "> FCGI_UNKNOWN_TYPE")
         self.write(reply)
       
 
@@ -329,10 +377,12 @@ class Request(cgi.Request):
     self.environ = {}
     self._stderr_used = 0
   
-  def log(self, level, message):
+  def log(self, level, message, data=None):
+    global log_file
+
     if log_level >= level:
-      log_file.write("%3d/%3d %s\n" % (self.__connection.fileno,
-        self.__request_id, message))
+      _log(level, "%3d/%3d %s" % (self.__connection.fileno,
+        self.__request_id, message), data)
 
   def run(self):
     try:
@@ -356,18 +406,17 @@ class Request(cgi.Request):
           rec.type = FCGI_STDOUT
           rec.request_id = self.__request_id
           rec.content_data = ""
+          self.log(2, "> FCGI_STDOUT: <close>")
           self.__connection.write(rec)
-          self.log(2, "Closed FCGI_STDOUT")
           if self._stderr_used:
             rec.type = FCGI_STDERR
+            self.log(2, "> FCGI_STDERR: <close>")
             self.__connection.write(rec)
-            self.log(2, "Closed FCGI_STDERR")
           rec.type = FCGI_END_REQUEST
-          rec.request_id = self.__request_id
           rec.content_data = struct.pack("!IBBBB", 0, FCGI_REQUEST_COMPLETE,
             0, 0, 0)
+          self.log(2, "> FCGI_END_REQUEST")
           self.__connection.write(rec)
-          self.log(2, "Sent FCGI_END_REQUEST")
         except IOError, x:
           if x[0] == errno.EPIPE:
             self.log(2, "EPIPE during request finalisation")
@@ -382,12 +431,12 @@ class Request(cgi.Request):
 
   def _write(self, s):
     if log_level >= 4:
-      self.log(4, "FCGI_STDOUT: %s" % repr(s))
+      self.log(4, "> FCGI_STDOUT", s)
     self._recwrite(FCGI_STDOUT, s)
 
   def error(self, s):
     if log_level >= 4:
-      self.log(4, "FCGI_STDERR: %s" % repr(s))
+      self.log(4, "> FCGI_STDERR", s)
     self._recwrite(FCGI_STDERR, s)
     self._stderr_used = 1
 
@@ -423,6 +472,7 @@ class GZipRequest(cgi.GZipMixIn, Request):
 class Server(object):
   def __init__(self, handler_types, max_requests=0, params=None,
     request_type=Request, threading_level=1):
+    global log_lock
     self.handler_types = handler_types
     self.max_requests = max_requests
     self.params = params
@@ -431,6 +481,7 @@ class Server(object):
     if threading_level > 0:
       try:
         import thread
+        log_lock = thread.allocate_lock()
       except ImportError, x:
         threading_level = 0
         self.log(2, "cannot import thread (%s), disabling threading" % str(x))
@@ -438,14 +489,14 @@ class Server(object):
 
   def log(self, level, message):
     if log_level >= level:
-      log_file.write("        %s\n" % message)
+      _log(level, "        %s" % message)
 
   def exit(self):
     self._sock.close()
 
   def run(self):
     self.log(1, "Server.run()")
-    if os.environ.has_key("FCGI_WEB_SERVER_ADDRS"):
+    if "FCGI_WEB_SERVER_ADDRS" in os.environ:
       web_server_addrs = os.environ["FCGI_WEB_SERVER_ADDRS"].split(",")
     else:
       web_server_addrs = None
@@ -496,7 +547,3 @@ class Server(object):
           self.log(1, "reached max_requests, exiting")
           break
     self._sock.close()
-
-
-if log_level > 0:
-  log_file = open("/tmp/fcgi.log", "a", 1)
