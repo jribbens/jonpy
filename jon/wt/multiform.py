@@ -27,7 +27,7 @@ class MultiForm(wt.TemplateCode):
 
   def delete(self):
     key = self._get_name()
-    if key is not None and self.wt.session.has_key(key):
+    if key is not None and key in self.wt.session:
       del self.wt.session[key]
 
   def main(self, template):
@@ -78,7 +78,7 @@ class MultiForm(wt.TemplateCode):
           ckey = key[:-1]
         else:
           ckey = key
-        if self.req.params.has_key(key):
+        if key in self.req.params:
           value = None
           if key.endswith("!"):
             if self.req.params[key].body:
