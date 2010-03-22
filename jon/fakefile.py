@@ -10,6 +10,7 @@ class FakeInput(object):
     self.softspace = 0
     self._buf = ""
     self.chunksize = 4096
+    self.newlines = None
 
   def _read(self, size):
     return ""
@@ -77,9 +78,14 @@ class FakeInput(object):
           return lines
 
   def xreadlines(self):
-    self._check_open()
-    import xreadlines
-    return xreadlines.xreadlines(self)
+    return iter(self)
+
+  def __iter__(self):
+    while 1:
+      line = self.readline()
+      if line == "":
+        break
+      yield line
 
   def seek(self, offset, whence=0):
     raise IOError("cannot seek()")
