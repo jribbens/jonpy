@@ -56,47 +56,6 @@ def url_decode(enc):
 
 __UNDEF__ = []
 
-def _lookup(name, frame, locls):
-  if name in locls:
-    return "local", locls[name]
-  if name in frame.f_globals:
-    return "global", frame.f_globals[name]
-  if "__builtins__" in frame.f_globals and \
-    hasattr(frame.f_globals["__builtins__"], name):
-    return "builtin", getattr(frame.f_globals["__builtins__"], name)
-  return None, __UNDEF__
-
-
-def _scanvars(reader, frame, locls):
-  import tokenize, keyword
-  vrs = []
-  lasttoken = None
-  parent = None
-  prefix = ""
-  for ttype, token, start, end, line in tokenize.generate_tokens(reader):
-    if ttype == tokenize.NEWLINE:
-      break
-    elif ttype == tokenize.NAME and token not in keyword.kwlist:
-      if lasttoken == ".":
-        if parent is not __UNDEF__:
-          value = getattr(parent, token, __UNDEF__)
-          vrs.append((prefix + token, prefix, value))
-      else:
-        (where, value) = _lookup(token, frame, locls)
-        vrs.append((token, where, value))
-    elif token == ".":
-      prefix += lasttoken + "."
-      parent = value
-    else:
-      parent = None
-      prefix = ""
-    lasttoken = token
-  return vrs
-
-
-def _tb_encode(s):
-  return html_encode(s).replace(" ", "&nbsp;")
-
 
 def traceback(req, html=0):
   exc = sys.exc_info()
