@@ -372,10 +372,10 @@ class Request(object):
 
 
 class GZipMixIn(object):
-  def _init(self):
+  def _init(self, *args, **kwargs):
     self._gzip = None
     self._gzip_level = 6
-    super(GZipMixIn, self)._init()
+    super(GZipMixIn, self)._init(*args, **kwargs)
 
   def _close(self):
     parent = super(GZipMixIn, self)
