@@ -1,19 +1,13 @@
 # $Id$
 
 
-class FakeInput(object):
-  name = "<fake input stream>"
-
+class FakeFile(object):
   def __init__(self):
     self.closed = 0
-    self.mode = "rb"
     self.softspace = 0
     self._buf = ""
     self.chunksize = 4096
     self.newlines = None
-
-  def _read(self, size):
-    return ""
 
   def close(self):
     self.closed = 1
@@ -24,6 +18,48 @@ class FakeInput(object):
 
   def flush(self):
     self._check_open()
+
+  def read(self, size=-1):
+    raise IOError("cannot read()")
+
+  def readline(self, size=-1):
+    raise IOError("cannot readline()")
+
+  def readlines(self, size=-1):
+    raise IOError("cannot readlines()")
+
+  def xreadlines(self):
+    return iter(self)
+
+  def __iter__(self):
+    while 1:
+      line = self.readline()
+      if line == "":
+        break
+      yield line
+
+  def seek(self, offset, whence=0):
+    raise IOError("cannot seek()")
+
+  def tell(self):
+    raise IOError("cannot tell()")
+
+  def truncate(self):
+    raise IOError("cannot truncate()")
+  
+  def write(self, s):
+    raise IOError("cannot write()")
+
+  def writelines(self, seq):
+    raise IOError("cannot writelines()")
+
+
+class FakeInput(FakeFile):
+  name = "<fake input stream>"
+  mode = "rb"
+
+  def _read(self, size):
+    return ""
 
   def _read_more(self, size=-1):
     d = self._read(size)
@@ -77,27 +113,18 @@ class FakeInput(object):
         if size <= 0:
           return lines
 
-  def xreadlines(self):
-    return iter(self)
 
-  def __iter__(self):
-    while 1:
-      line = self.readline()
-      if line == "":
-        break
-      yield line
+class FakeOutput(FakeFile):
+  name = "<fake output stream>"
+  mode = "wb"
 
-  def seek(self, offset, whence=0):
-    raise IOError("cannot seek()")
+  def __init__(self, write):
+    FakeFile.__init__(self)
+    self._write = write
 
-  def tell(self):
-    raise IOError("cannot tell()")
-
-  def truncate(self):
-    raise IOError("cannot truncate()")
-  
   def write(self, s):
-    raise IOError("cannot write()")
+    self._write(s)
 
-  def writelines(self, s):
-    raise IOError("cannot writelines()")
+  def writelines(self, seq):
+    for line in seq:
+      self._write(line)
