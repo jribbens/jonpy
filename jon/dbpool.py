@@ -44,7 +44,7 @@ def set_database(dbmod, minconns, timeout=0):
   if minconns < 1:
     raise ValueError("minconns must be greater than or equal to 1")
   if _dbmod is not None:
-    if _dbmod == dbmod:
+    if _dbmod is dbmod:
       return
     raise Exception("dbpool module is already in use")
   if len(dbmod.apilevel) != 3 or dbmod.apilevel[:2] != "2." or \
