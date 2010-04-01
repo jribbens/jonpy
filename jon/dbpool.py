@@ -4,6 +4,7 @@ import weakref as _weakref
 import Queue as _Queue
 import thread as _thread
 import time as _time
+import atexit as _atexit
 
 
 _log_level = 0
@@ -107,15 +108,14 @@ def _make_available(conn):
 def _connection_notinuse(ref):
   # if the Python interpreter is exiting, the globals might already have
   # been deleted, so check for them explicitly
-  _log(2, "_connection_notinuse", ref)
-  if _refs is None or _make_available is None or _Connection is None:
+  if _refs is None:
     return
   inner = _refs[ref]
   del _refs[ref]
-  _log(3, "_connection_notinuse: inner=%r" % inner)
   inner._cursorref = None
   if inner._connection is not None:
-    _make_available(_Connection(inner))
+    if _make_available is not None and _Connection is not None:
+      _make_available(_Connection(inner))
 
 
 class _Connection(object):
@@ -181,7 +181,8 @@ class _InnerConnection(object):
     conn = self._connection
     if conn:
       self._connection = None
-      _make_available(_Connection(None, conn, *self._args, **self._kwargs))
+      if _make_available is not None:
+        _make_available(_Connection(None, conn, *self._args, **self._kwargs))
 
   def __getattr__(self, attr):
     return getattr(self._connection, attr)
@@ -221,3 +222,10 @@ class _Cursor(object):
 
   def __getattr__(self, attr):
     return getattr(self._cursor, attr)
+
+
+def _exiting():
+  global _make_available
+  _make_available = None
+
+_atexit.register(_exiting)
