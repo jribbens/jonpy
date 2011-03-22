@@ -187,7 +187,7 @@ class Request(object):
     does not exist, it is created containing the single value specified."""
     current = self.get_header(hdr)
     if not current:
-      self.add_header(hdr, val)
+      self.set_header(hdr, val)
       return val
     if val.lower() in [x.strip().lower() for x in current.split(",")]:
       return current
