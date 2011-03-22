@@ -181,6 +181,20 @@ class Request(object):
       else:
         break
 
+  def append_header_value(self, hdr, val):
+    """Adds a value to a header that contains a comma-separated list of values.
+    If the value is already in the list, it is not added again. If the header
+    does not exist, it is created containing the single value specified."""
+    current = self.get_header(hdr)
+    if not current:
+      self.add_header(hdr, val)
+      return val
+    if val.lower() in [x.strip().lower() for x in current.split(",")]:
+      return current
+    val = current + "," + val
+    self.set_header(hdr, val)
+    return val
+
   def set_buffering(self, f):
     """Specifies whether or not body output is buffered."""
     self._check_open()
@@ -410,6 +424,7 @@ class GZipMixIn(object):
     if self._gzip_level == 0:
       parent.output_headers()
       return
+    self.append_header_value("Vary", "Accept-Encoding")
     gzip_ok = 0
     if "HTTP_ACCEPT_ENCODING" in self.environ:
       encodings = [[a.strip() for a in x.split(";", 1)]
@@ -427,13 +442,7 @@ class GZipMixIn(object):
     if gzip_ok:
       try:
         import zlib
-        encoding = "gzip"
-        encoding = self.get_header("Content-Encoding")
-        if encoding is None:
-          encoding = "gzip"
-        else:
-          encoding += ", gzip"
-        self.set_header("Content-Encoding", encoding)
+        self.append_header_value("Content-Encoding", "gzip")
         self.del_header("Content-Length")
         parent.output_headers()
         self._gzip = zlib.compressobj(self._gzip_level, 8, -15)
