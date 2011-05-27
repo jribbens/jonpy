@@ -59,10 +59,16 @@ class Session(dict):
   tidy = staticmethod(tidy)
 
   def __init__(self, req, secret, cookie="jonsid", url=0, root="",
-    referer=None, sid=None, shash=None, secure=0, domain=None):
+    referer=None, sid=None, shash=None, secure=0, domain=None, create=True):
     dict.__init__(self)
     self["id"] = None
     self._req = req
+    self._secret = secret
+    self.cookie = cookie
+    self.url = url
+    self.root = root
+    self.secure = secure
+    self.domain = domain
     self.relocated = 0
     self.new = 0
     
@@ -71,27 +77,27 @@ class Session(dict):
     if sid is not None:
       self["id"] = sid
       if shash is None:
-        self["hash"] = self._make_hash(self["id"], secret)
+        self["hash"] = self._make_hash(self["id"], self._secret)
       else:
         self["hash"] = shash
-        if self["hash"] != self._make_hash(self["id"], secret):
+        if self["hash"] != self._make_hash(self["id"], self._secret):
           self["id"] = None
 
-    if cookie and cookie in self._req.cookies:
-      self["id"] = self._req.cookies[cookie].value[:8]
-      self["hash"] = self._req.cookies[cookie].value[8:]
-      if self["hash"] != self._make_hash(self["id"], secret):
+    if self.cookie and self.cookie in self._req.cookies:
+      self["id"] = self._req.cookies[self.cookie].value[:8]
+      self["hash"] = self._req.cookies[self.cookie].value[8:]
+      if self["hash"] != self._make_hash(self["id"], self._secret):
         self["id"] = None
 
-    if url:
+    if self.url:
       for i in range(1, 4):
-        requrl = self._req.environ.get("REDIRECT_" * i + "SESSION")
-        if requrl:
+        self._requrl = self._req.environ.get("REDIRECT_" * i + "SESSION")
+        if self._requrl:
           break
-      if requrl and self["id"] is None:
-        self["id"] = requrl[:8]
-        self["hash"] = requrl[8:]
-        if self["hash"] != self._make_hash(self["id"], secret):
+      if self._requrl and self["id"] is None:
+        self["id"] = self._requrl[:8]
+        self["hash"] = self._requrl[8:]
+        if self["hash"] != self._make_hash(self["id"], self._secret):
           self["id"] = None
 
     # check the session
@@ -109,35 +115,39 @@ class Session(dict):
 
     # if no session was available and loaded, create a new one
 
-    if self["id"] is None:
-      if "hash" in self:
-        del self["hash"]
-      self.created = time.time()
-      self.new = 1
-      self._create(secret)
-      if "hash" not in self:
-        self["hash"] = self._make_hash(self["id"], secret)
-      if cookie:
-        c = Cookie.SimpleCookie()
-        c[cookie] = self["id"] + self["hash"]
-        c[cookie]["path"] = root + "/"
-        if secure:
-          c[cookie]["secure"] = 1
-        if domain:
-          c[cookie]["domain"] = domain
-        self._req.add_header("Set-Cookie", c[cookie].OutputString())
+    if create and self["id"] is None:
+      self.create()
+
+  def create(self):
+    if "hash" in self:
+      del self["hash"]
+    self.created = time.time()
+    self.new = 1
+    self._create(self._secret)
+    if "hash" not in self:
+      self["hash"] = self._make_hash(self["id"], self._secret)
+    if self.cookie:
+      c = Cookie.SimpleCookie()
+      c[self.cookie] = self["id"] + self["hash"]
+      c[self.cookie]["path"] = self.root + "/"
+      if self.secure:
+        c[self.cookie]["secure"] = 1
+      if self.domain:
+        c[self.cookie]["domain"] = self.domain
+      self._req.add_header("Set-Cookie", c[self.cookie].OutputString())
 
     # if using url-based sessions, redirect if necessary
 
-    if url:
+    if self.url:
+      requrl = self._requrl
       if not requrl or self["id"] != requrl[:8] or self["hash"] != requrl[8:]:
-        requrl = self._req.environ["REQUEST_URI"][len(root):]
+        requrl = self._req.environ["REQUEST_URI"][len(self.root):]
         requrl = re.sub("^/[A-Fa-f0-9]{16}/", "/", requrl)
-        self._req.add_header("Location", "http://" + 
-          self._req.environ["SERVER_NAME"] + root + "/" + self["id"] +
+        self._req.add_header("Location", "http://" +
+          self._req.environ["SERVER_NAME"] + self.root + "/" + self["id"] +
           self["hash"] + requrl)
         self.relocated = 1
-      self.surl = root + "/" + self["id"] + self["hash"] + "/"
+      self.surl = self.root + "/" + self["id"] + self["hash"] + "/"
 
 
 class MemorySession(Session):
