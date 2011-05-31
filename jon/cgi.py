@@ -92,7 +92,7 @@ class Request(object):
     self._output = StringIO.StringIO()
     self._pos = 0
     self.closed = 0
-    self._encoding = self._inputencoding = None
+    self._encoding = self._inputencoding = self._form_encoding = None
     try:
       del self.params
     except AttributeError:
@@ -209,6 +209,12 @@ class Request(object):
 
   def get_encoding(self):
     return self._encoding
+  
+  def set_form_encoding(self, encoding):
+    self._form_encoding = encoding
+
+  def get_form_encoding(self):
+    return self._form_encoding
 
   def flush(self):
     """Flushes the body output."""
@@ -313,8 +319,12 @@ class Request(object):
         continue
       nameval = pair.split("=", 1)
       name = url_decode(nameval[0])
+      if self._form_encoding:
+        name = name.decode(self._form_encoding)
       if len(nameval) > 1:
         val = url_decode(nameval[1])
+        if self._form_encoding:
+          val = val.decode(self._form_encoding)
       else:
         val = None
       if name.endswith("!") or name.endswith("!*"):
@@ -344,21 +354,18 @@ class Request(object):
       if entity.content_disposition[0] != 'form-data':
         continue
       name = entity.content_disposition[1].get("name")
-      if name[-1:] == "*":
-        if name in self.params:
-          if name[-2:-1] == "!":
-            self.params[name].append(entity)
-          else:
-            self.params[name].append(entity.body)
-        else:
-          if name[-2:-1] == "!":
-            self.params[name] = [entity]
-          else:
-            self.params[name] = [entity.body]
-      elif name[-1:] == "!":
-        self.params[name] = entity
+      if self._form_encoding:
+        name = mime.decodeword(name)
+      if name[-1:] == "!" or name[-2:] == "!*":
+        value = entity
       else:
-        self.params[name] = entity.body
+        value = entity.body
+        if self._form_encoding:
+          value = value.decode(self._form_encoding)
+      if name[-1:] == "*":
+        self.params.setdefault(name, []).append(value)
+      else:
+        self.params[name] = value
 
   def _read_cgi_data(self, environ, inf):
     """Read input data from the client and set up the object attributes."""
