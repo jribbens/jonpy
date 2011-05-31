@@ -181,3 +181,24 @@ def decode(encoding, s):
     return base64.decodestring(s)
   else:
     raise Error("Unknown encoding %s" % repr(encoding))
+
+
+def decodeword(s):
+  if s[:2] != "=?" or s[-2:] != "?=":
+    return unicode(s)
+  t = s.split("?")
+  if len(t) != 3:
+    return unicode(s)
+  charset = t[0].lower()
+  encoding = t[1].lower()
+  if encoding == "q":
+    s = decode("quoted-printable", t[2])
+  elif encoding == "b":
+    s = decode("base64", t[2])
+  else:
+    raise Error("Unknown encoded-word encoding %s" % repr(encoding))
+  try:
+    s = s.decode(charset)
+  except (LookupError, UnicodeError):
+    raise Error("Error decoding %s as %s" % (repr(s), repr(encoding)))
+  return s
