@@ -191,7 +191,7 @@ class Request(object):
       return val
     if val.lower() in [x.strip().lower() for x in current.split(",")]:
       return current
-    val = current + "," + val
+    val = current + ", " + val
     self.set_header(hdr, val)
     return val
 
