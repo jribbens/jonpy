@@ -63,8 +63,9 @@ def traceback(req, html=0):
   if html:
     try:
       req.clear_headers()
-      req.clear_output()
+      req.set_header("Status", "500")
       req.set_header("Content-Type", "text/html; charset=iso-8859-1")
+      req.clear_output()
     except SequencingError:
       pass
     cgitb.Hook(file=req)(*exc)
@@ -381,8 +382,9 @@ class Request(object):
     traceback(self)
     try:
       self.clear_headers()
-      self.clear_output()
+      self.set_header("Status", "500")
       self.set_header("Content-Type", "text/html; charset=iso-8859-1")
+      self.clear_output()
     except SequencingError:
       pass
     self.write("""\
