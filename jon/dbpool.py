@@ -189,15 +189,16 @@ class _InnerConnection(object):
 
   def cursor(self, *args, **kwargs):
     _log(3, "cursor", self, *args, **kwargs)
-    self._lock.acquire()
-    try:
-      if self._cursorref is None or self._cursorref() is None:
-        c = _Cursor(self, *args, **kwargs)
-        self._cursorref = _weakref.ref(c)
-        self._lastuse = _time.time()
-        return c
-    finally:
-      self._lock.release()
+    if _timeout == 0 or _time.time() - self._lastuse < _timeout:
+      self._lock.acquire()
+      try:
+        if self._cursorref is None or self._cursorref() is None:
+          c = _Cursor(self, *args, **kwargs)
+          self._cursorref = _weakref.ref(c)
+          self._lastuse = _time.time()
+          return c
+      finally:
+        self._lock.release()
     _log(3, "cursor: creating new connection")
     return connect(*self._args, **self._kwargs).cursor(*args, **kwargs)
 
