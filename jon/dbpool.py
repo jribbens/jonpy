@@ -41,7 +41,7 @@ def _log(level, message, *args, **kwargs):
       _log_lock.release()
 
 
-def set_database(dbmod, minconns, timeout=0):
+def set_database(dbmod, minconns, timeout=0, postconnect=None):
   if minconns < 1:
     raise ValueError("minconns must be greater than or equal to 1")
   if _dbmod is not None:
@@ -60,6 +60,7 @@ def set_database(dbmod, minconns, timeout=0):
   g["_available"] = {}
   g["_minconns"] = minconns
   g["_timeout"] = timeout
+  g["_postconnect"] = postconnect
   for v in _COPY_ATTRS:
     g[v] = getattr(dbmod, v)
 
@@ -148,7 +149,7 @@ class _Connection(object):
   def __getattr__(self, attr):
     return getattr(self._inner, attr)
 
-    
+
 class _InnerConnection(object):
   def __init__(self, connection, *args, **kwargs):
     self._connection = None
@@ -158,6 +159,8 @@ class _InnerConnection(object):
     if connection is None:
       _log(2, "_InnerConnection: Calling actual connect", *args, **kwargs)
       self._connection = _dbmod.connect(*args, **kwargs)
+      if _postconnect:
+        _postconnect(self._connection, *args, **kwargs)
     else:
       _log(5, "_InnerConnection: Re-using connection %r" % connection)
       self._connection = connection
@@ -210,7 +213,7 @@ class _Cursor(object):
     self._connection = connection
     self._outer = connection._outerref()
     self._cursor = connection._connection.cursor(*args, **kwargs)
-  
+
   def __repr__(self):
     return "<dbpool._Cursor(%r) at %x>" % (self._cursor, id(self))
 
