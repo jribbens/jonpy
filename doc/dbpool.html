@@ -75,10 +75,11 @@ contain the value from the underlying database module.</p>
 are copied from the underlying database module.</p>
 
 <h3>Functions</h3>
-<h4><a name="set_database" id="set_database"><code><strong>set_database(dbmod, minconns, timeout=0)</strong></code></a></h4>
+<h4><a name="set_database" id="set_database"><code><strong>set_database(dbmod, minconns, timeout=0, postconnect=None)</strong></code></a></h4>
 <p><code><strong>dbmod</strong></code>: module<br />
 <code><strong>minconns</strong></code>: integer<br />
-<code><strong>timeout</strong></code>: integer</p>
+<code><strong>timeout</strong></code>: integer<br />
+<code><strong>postconnect</strong></code>: callable</p>
 <p>Configures the <code>dbpool</code> module to act as a wrapper around the
 specified DB-API module. <code>dbmod</code> is a reference to the database
 module to use. <code>minconns</code> is an integer, which must be
@@ -94,13 +95,23 @@ that no timeout will be applied. This timeout is intended to prevent
 <code>dbpool</code> from re-using connections that the database server will
 have closed due a timeout on the server side, so a value that is less than
 the server-side timeout should be chosen.</p>
+<p><code>postconnect</code> is a callable. If it is provided then it will be
+called immediately after any connection to the database is created. The first
+argument will be the database connection, and the remaining positional and
+keyword arguments will be identical to those passed to the database's
+<code>connect</code> function. This can be used to perform any configuration
+required on the database connections that cannot be done via arguments to
+<code>connect</code> - for example, enable to auto-commit on MySQL
+connections.</p>
 <p>The database module to be used must have a <code>threadsafety</code> level
 of at least <code>1</code>, i.e. if the database cannot cope at all with
 multi-threading then there is nothing <code>dbpool</code> can do to make it
 work.</p>
 <p>Note that you can only call this function once.</p>
 <p>Example:</p>
-<p class="code"><code>set_database(MySQLdb, 5)</code></p>
+<p class="code"><code>def setautocommit(dbh, *args, **kwargs):<br />
+&nbsp;&nbsp;dbh.autocommit(True)<br />
+set_database(MySQLdb, 5, postconnect=setautocommit)</code></p>
 
 <h4><a name="connect" id="connect"><code><strong>connect(...)</strong></code></a></h4>
 <p><code><strong>Returns</strong></code>: database connection instance</p>
