@@ -36,7 +36,7 @@ class Request(cgi.Request):
     return []
 
   def error(self, s):
-    self.environ["wsgi.stderr"].write(s)
+    self.environ["wsgi.errors"].write(s)
 
   def _write(self, s):
     if not self.aborted:
