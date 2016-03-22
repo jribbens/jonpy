@@ -63,7 +63,7 @@ def traceback(req, html=0):
   if html:
     try:
       req.clear_headers()
-      req.set_header("Status", "500")
+      req.set_header("Status", "500 Internal Server Error")
       req.set_header("Content-Type", "text/html; charset=iso-8859-1")
       req.clear_output()
     except SequencingError:
@@ -382,7 +382,7 @@ class Request(object):
     traceback(self)
     try:
       self.clear_headers()
-      self.set_header("Status", "500")
+      self.set_header("Status", "500 Internal Server Error")
       self.set_header("Content-Type", "text/html; charset=iso-8859-1")
       self.clear_output()
     except SequencingError:
