@@ -210,7 +210,7 @@ class Request(object):
 
   def get_encoding(self):
     return self._encoding
-  
+
   def set_form_encoding(self, encoding):
     self._form_encoding = encoding
 
@@ -240,7 +240,7 @@ class Request(object):
     """Records an error message from the program."""
     """The output is logged or otherwise stored on the server. It does not
     go to the client.
-    
+
     Must be overridden by the sub-class."""
     raise NotImplementedError("error must be overridden")
 
@@ -278,10 +278,10 @@ class Request(object):
         self.output_headers()
       self._pos += len(s)
       self._write(s)
-  
+
   def tell(self):
     return self._pos + self._output.tell()
-  
+
   def seek(self, offset, whence=0):
     self._check_open()
     currentpos = self._pos + self._output.tell()

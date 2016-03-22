@@ -82,7 +82,7 @@ def parse_content_disposition(s):
     raise Error("Unexpected character %s in disposition" % repr(s[i]))
   i+= 1
   return (disposition, parse_params(s[i:]))
-    
+
 
 def parse_content_type(s):
   i = 0

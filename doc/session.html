@@ -33,11 +33,11 @@ more difficult for an attacker to guess a valid session identifier. The id
 and hash are stored in the session under the keys <code>id</code> and
 <code>hash</code>, so don't try to use these keys for storing your own
 data.</p>
-<p>The session identifier and hash are passed from request to request 
-using cookies. Note that some users disable cookies in their browsers, 
+<p>The session identifier and hash are passed from request to request
+using cookies. Note that some users disable cookies in their browsers,
 so site code will need to detect this situation and either cope without
 sessions, or show the user an error message.</p>
-<p>This module used to provide a method for embedding the session identifier 
+<p>This module used to provide a method for embedding the session identifier
 in the URL, but this has now been deprecated.</p>
 <p>To create and maintain the session, a session class should be instantiated
 at the start of processing a request, and its

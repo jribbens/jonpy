@@ -109,7 +109,7 @@ class Request(cgi.Request):
         handler.traceback(self)
     self.flush()
     return apache.OK
-  
+
   def error(self, s):
     apache.log_error(s, apache.APLOG_ERR, self._modpy_req.server)
 

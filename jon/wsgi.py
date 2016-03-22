@@ -34,7 +34,7 @@ class Request(cgi.Request):
         handler.traceback(self)
     self.flush()
     return []
-  
+
   def error(self, s):
     self.environ["wsgi.stderr"].write(s)
 

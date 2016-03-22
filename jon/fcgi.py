@@ -360,7 +360,7 @@ class Connection(object):
         reply.content_data = chr(rec.type) + "\x00" * 7
         self.log(3, "> FCGI_UNKNOWN_TYPE")
         self.write(reply)
-      
+
 
 class Request(cgi.Request):
   _fcgi_fallback_type = cgi.CGIRequest
@@ -376,7 +376,7 @@ class Request(cgi.Request):
     self.stdin = InputStream(connection, "stdin", threading_level > 1)
     self.environ = {}
     self._stderr_used = 0
-  
+
   def log(self, level, message, data=None):
     global log_file
 

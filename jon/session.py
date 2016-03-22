@@ -21,13 +21,13 @@ class Error(Exception):
 class Session(dict):
   def _make_hash(self, sid, secret):
     """Create a hash for 'sid'
-    
+
     This function may be overridden by subclasses."""
     return hmac.new(secret, sid, sha).hexdigest()[:8]
 
   def _create(self, secret):
     """Create a new session ID and, optionally hash
-    
+
     This function must insert the new session ID (which must be 8 hexadecimal
     characters) into self["id"].
 
@@ -42,7 +42,7 @@ class Session(dict):
 
   def _load(self):
     """Load the session dictionary from somewhere
-    
+
     This function may be overridden by subclasses.
     It should return 1 if the load was successful, or 0 if the session could
     not be found. Any other type of error should raise an exception as usual."""
@@ -50,7 +50,7 @@ class Session(dict):
 
   def save(self):
     """Save the session dictionary to somewhere
-    
+
     This function may be overridden by subclasses."""
     pass
 
@@ -71,9 +71,9 @@ class Session(dict):
     self.domain = domain
     self.relocated = 0
     self.new = 0
-    
+
     # try and determine existing session id
-    
+
     if sid is not None:
       self["id"] = sid
       if shash is None:
@@ -161,7 +161,7 @@ class MemorySession(Session):
       self._sessions[self["id"]] = {"created": self.created,
         "updated": self.created, "data": {}}
       break
-  
+
   def _load(self):
     try:
       sess = self._sessions[self["id"]]
@@ -227,7 +227,7 @@ class FileSession(Session):
     pickle.dump(self.copy(), f, 1)
     f.flush()
     f.truncate()
-    
+
   def tidy(cls, max_idle=0, max_age=0, basedir=None):
     if not max_idle and not max_age:
       return
@@ -309,7 +309,7 @@ class GenericSQLSession(Session):
     if max_idle or max_age:
       dbc.execute("COMMIT")
   tidy = staticmethod(tidy)
-    
+
   def __init__(self, req, secret, dbc, table="sessions", **kwargs):
     self.dbc = dbc
     self.table = table

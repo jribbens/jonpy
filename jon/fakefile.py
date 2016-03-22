@@ -46,7 +46,7 @@ class FakeFile(object):
 
   def truncate(self):
     raise IOError("cannot truncate()")
-  
+
   def write(self, s):
     raise IOError("cannot write()")
 

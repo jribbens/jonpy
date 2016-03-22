@@ -72,11 +72,11 @@ If an exception is thrown by this method then the
 to display it.</p>
 <p>The value returned by this method is the value that the mod_python
 <code>handler</code> function should return.</p>
-<p>Note that there is a difference in how 
+<p>Note that there is a difference in how
 <code>modpy.<a href="#request">Request</a></code> and
 <code><a href="cgi.html#cgirequest">cgi.CGIRequest</a></code> handle the case
-where the handler outputs a <code>Location</code> header without a hostname. 
-When using the CGI protocol, the Apache web server will issue an 
+where the handler outputs a <code>Location</code> header without a hostname.
+When using the CGI protocol, the Apache web server will issue an
 <em>internal</em> redirect to handle the new URL. When using mod_python, this
 is not possible and you should not output <code>Location</code> headers which
 do not contain absolute URLs.</p>

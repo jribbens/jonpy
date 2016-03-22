@@ -11,7 +11,7 @@ class MultiForm(wt.TemplateCode):
   filename = "mf%d.html"
   keys = ()
   xhtml = 1
-  
+
   def init(self):
     pass
 
