@@ -9,6 +9,6 @@ setup(name="jonpy",
       description="Jon's Python modules",
       author="Jon Ribbens",
       author_email="jon+jonpy@unequivocal.co.uk",
-      url="http://jonpy.sourceforge.net/",
+      url="https://github.com/jribbens/jonpy",
       packages=['jon', 'jon.wt']
 )
