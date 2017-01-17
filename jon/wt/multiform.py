@@ -136,9 +136,10 @@ class Stage(wt.TemplateCode):
       (self.outer.stage + 1, close)]
     for key in self.outer.container.keys():
       if key not in self.outer.stage_objs[self.outer.stage].keys:
-        s.append('<input type="hidden" name="%s" value="%s"%s>' % \
-          (cgi.html_encode(key), cgi.html_encode(self.outer.container[key]),
-          close))
+        for value in (self.outer.container[key] if key.endswith("*")
+            else (self.outer.container[key],)):
+          s.append('<input type="hidden" name="%s" value="%s"%s>' % \
+            (cgi.html_encode(key), cgi.html_encode(value), close))
     return "".join(s)
 
   def update(self):
