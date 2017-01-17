@@ -11,7 +11,7 @@
 of the <a href="http://www.fastcgi.com/">FastCGI</a> protocol. Code originally
 written with the CGI protocol in mind can be used unchanged with the FastCGI
 protocol by using this module. The module implements the entire
-<a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html">FastCGI
+<a href="https://fast-cgi.github.io/spec">FastCGI
 specification</a> version 1.0, including multiple simultaneous connections per
 process and multiple simultaneous requests per connection. Requests are
 executed using Python's threading facilities, although it can be configured to
@@ -53,7 +53,7 @@ as indicated by <code>handler_types</code> are created to handle the requests.
 The valid keys for the <code>handler_types</code> map are
 <code>fcgi.FCGI_RESPONDER</code>, <code>fcgi.FCGI_AUTHORIZER</code> and
 <code>fcgi.FCGI_FILTER</code>. These types are described in the
-<a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html#S6">FastCGI
+<a href="https://fast-cgi.github.io/spec#roles">FastCGI
 specification</a>. The usual one to use (that corresponds to the usual
 function of a CGI application) is <code>fcgi.FCGI_RESPONDER</code>.</p>
 <p>Normally, once started, the server will loop forever accepting connections.
