@@ -7,13 +7,13 @@
 <h1>dbpool module</h1>
 <h2>Synopsis</h2>
 <p>The <code>dbpool</code> module is a wrapper for Python
-<a href="http://www.python.org/dev/peps/pep-0249/">DB-API 2.0-compliant</a>
+<a href="https://www.python.org/dev/peps/pep-0249/">DB-API 2.0-compliant</a>
 database modules to (a) keep a pool of physical connections available and (b)
 upgrade the modules to <code>threadsafety</code> level <code>2</code>, which
 means that threads can share logical database connections.</p>
 <h2>Usage</h2>
 <p>The module provides only one function not described by the
-<a href="http://www.python.org/dev/peps/pep-0249/">DB-API 2.0
+<a href="https://www.python.org/dev/peps/pep-0249/">DB-API 2.0
 spec</a>. The module is initialized by calling
 <code><a href="#set_database">set_database</a></code> with a reference to the
 underlying database module to be used and the number of physical database

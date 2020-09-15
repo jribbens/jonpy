@@ -46,12 +46,12 @@ followed by an identifier name (which may contain alphanumerics and underscore)
 and another two dollar signs - for example, <code>$$title$$</code>. You then
 supply a variable or method of the same name in the current section class, the
 value or return value of which will be output instead of the literal text of
-the replacement. Names beinning with an underscore are reserved.</p>
+the replacement. Names beginning with an underscore are reserved.</p>
 <p>By default, the value will be passed through
 <code><a href="cgi.html#html_encode">cgi.html_encode</a></code> before being
 output.  Doing this by default simplifies programming since it is almost always
 the correct option. It also means that your code is secure by default against
-<a href="http://www.cert.org/tech_tips/malicious_code_mitigation.html">cross-site scripting attacks</a>.
+<a href="http://www.cert.org/historical/tech_tips/malicious_code_mitigation.cfm">cross-site scripting attacks</a>.
 (You must also make sure that the browser knows what character set you are
 using, but since
 <code><a href="cgi.html#request:__init__">cgi.Request.__init__</a></code>

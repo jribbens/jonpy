@@ -62,7 +62,7 @@ will exit after that many requests have been initiated. Note that when control
 returns to the caller, requests that have been initiated but not yet completed
 may still be in progress in other threads.</p>
 <p>You can alter the values that are returned to the web server if it sends a
-<code><a href="http://www.fastcgi.com/devkit/doc/fcgi-spec.html#S4.1">FCGI_GET_VALUES</a></code>
+<code><a href="https://fast-cgi.github.io/spec#fcgigetvalues-fcgigetvaluesresult">FCGI_GET_VALUES</a></code>
 request by using the optional <code>params</code> parameter, which is a map
 from requested variable names to their value. The following default values are
 used unless explicitly specified:</p>
