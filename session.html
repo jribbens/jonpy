@@ -71,7 +71,7 @@ when this session was created.</p>
 this request (i.e. there was no pre-existing session).</p>
 
 <h3>Public Methods</h3>
-<h4><a name="session:__init__" id="session:__init__"><code><strong>__init__(self, req, secret, cookie="jonsid", root="",<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sid=None, shash=None, secure=0, domain=None, create=True)</strong></code></a></h4>
+<h4><a name="session:__init__" id="session:__init__"><code><strong>__init__(self, req, secret, cookie="jonsid", root="",<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sid=None, shash=None, secure=0, domain=None, create=True, samesite=None)</strong></code></a></h4>
 <p><code><strong>req</strong></code>:
 <code><a href="cgi.html#request">cgi.Request</a></code> instance<br />
 <code><strong>secret</strong></code>: string<br />
@@ -81,7 +81,8 @@ this request (i.e. there was no pre-existing session).</p>
 <code><strong>shash</strong></code>: string<br />
 <code><strong>secure</strong></code>: true or false value<br />
 <code><strong>domain</strong></code>: string<br />
-<code><strong>create</strong></code>: true or false value</p>
+<code><strong>create</strong></code>: true or false value<br />
+<code><strong>samesite</strong></code>: string</p>
 <p>This method may be overridden by subclasses. It creates a new
 <code>Session</code> instance. <code>secret</code> is a secret key (i.e. any
 arbitrary string that you do not disclose) which is used for keying the hash
@@ -94,7 +95,7 @@ the session identifier. There is usually no need to change this from the default
 of <code>jonsid</code>. If <code>secure</code> is true then the 'secure' flag
 of the cookie will be set, which tells browsers not to send the cookie if the
 connection is not encrypted. If <code>domain</code> is set then this will be
-used as the 'domain' parameter for the cookie. <code>root</code> is used
+used as the 'domain' parameter for the cookie. If <code>samesite</code> is set then this will be used as the 'SameSite' parameter for the cookie. <code>root</code> is used
 as the 'path' parameter for the cookie, with a <code>/</code> appended.</p>
 <p>If you wish to identify the session in some other way than cookies, you can
 set <code>cookie</code> to <code>None</code>
