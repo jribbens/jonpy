@@ -59,7 +59,8 @@ class Session(dict):
   tidy = staticmethod(tidy)
 
   def __init__(self, req, secret, cookie="jonsid", url=0, root="",
-    referer=None, sid=None, shash=None, secure=0, domain=None, create=True):
+    referer=None, sid=None, shash=None, secure=0, domain=None, create=True,
+    samesite=None):
     dict.__init__(self)
     self["id"] = None
     self._req = req
@@ -69,6 +70,7 @@ class Session(dict):
     self.root = root
     self.secure = secure
     self.domain = domain
+    self.samesite = samesite
     self.relocated = 0
     self.new = 0
 
@@ -134,7 +136,11 @@ class Session(dict):
         c[self.cookie]["secure"] = 1
       if self.domain:
         c[self.cookie]["domain"] = self.domain
-      self._req.add_header("Set-Cookie", c[self.cookie].OutputString())
+      self._req.add_header(
+        "Set-Cookie",
+        c[self.cookie].OutputString() +
+        (("; SameSite=" + self.samesite) if self.samesite else "")
+      )
 
     # if using url-based sessions, redirect if necessary
 
